@@ -6,12 +6,8 @@ if ! command -v git >/dev/null 2>&1; then
   exit 1
 fi
 
-if command -v python3 >/dev/null 2>&1; then
-  PYTHON=python3
-elif command -v python >/dev/null 2>&1; then
-  PYTHON=python
-else
-  echo "python3 or python is required on PATH" >&2
+if ! command -v uv >/dev/null 2>&1; then
+  echo "uv is required on PATH (https://github.com/astral-sh/uv)" >&2
   exit 1
 fi
 
@@ -52,16 +48,16 @@ if [ ! -f "build_search_index.js" ]; then
   exit 1
 fi
 
-echo "Ensuring Python dependencies are installed..."
-"$PYTHON" - << 'EOF'
-import subprocess, sys
-pkgs = ["datasets", "python-dateutil", "scikit-learn", "sentence-transformers"]
-for p in pkgs:
-    try:
-        __import__(p.split("-")[0])
-    except ImportError:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", p])
-EOF
+if [ ! -f "pyproject.toml" ]; then
+  echo "pyproject.toml not found; cannot install Python deps" >&2
+  exit 1
+fi
+
+echo "Creating Python 3.13 virtual env with uv..."
+uv venv --python 3.13 .venv
+
+echo "Syncing Python dependencies via uv (pyproject.toml)..."
+uv sync --python 3.13
 
 echo "Ensuring npm dependencies are installed..."
 if [ ! -f package.json ]; then
@@ -83,7 +79,7 @@ fi
 npm install
 
 echo "Building Epstein email metadata, timeline, people, threads, neighbors..."
-"$PYTHON" build_epstein_index.py
+uv run --python 3.13 build_epstein_index.py
 
 if [ ! -f "data/meta.json" ]; then
   echo "build_epstein_index.py did not produce data/meta.json" >&2
@@ -129,4 +125,3 @@ echo
 echo "Deployment complete."
 echo "In the GitHub repo settings, set Pages source to:"
 echo "  Branch: gh-pages   Folder: / (root)"
-

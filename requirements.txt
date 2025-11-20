@@ -1,4 +1,0 @@
-datasets>=2.20.0
-python-dateutil>=2.9.0
-scikit-learn>=1.4.0
-sentence-transformers>=2.7.0
