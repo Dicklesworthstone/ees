@@ -1,0 +1,12 @@
+{
+  "name": "epstein-emails-explorer",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "flexsearch": "^0.8.2"
+  },
+  "scripts": {
+    "build:index": "node build_search_index.js"
+  }
+}
+

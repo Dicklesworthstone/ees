@@ -1,0 +1,1478 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Epstein Email Explorer</title>
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+  </head>
+  <body class="bg-slate-950 text-slate-100">
+    <div class="min-h-screen flex flex-col">
+      <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur">
+        <div class="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
+          <div>
+            <h1 class="text-lg font-semibold tracking-tight">
+              Epstein Email Explorer
+            </h1>
+            <p class="text-xs text-slate-400">
+              Local, client-side search over the FOIA dataset (20k+ documents).
+            </p>
+          </div>
+          <div class="flex items-center gap-2 text-xs text-slate-400">
+            <span class="hidden sm:inline">
+              Search supports field filters like
+              <code class="px-1 rounded bg-slate-900/80 text-[0.65rem]">
+                subject:"flight manifest" AND from:epstein
+              </code>
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <main class="flex-1 flex overflow-hidden">
+        <!-- Left pane: search / people -->
+        <aside
+          class="w-full md:w-96 border-r border-slate-800 flex flex-col bg-slate-950/80"
+        >
+          <div class="px-4 pt-3 pb-2 border-b border-slate-800">
+            <div class="flex items-center gap-2 mb-2">
+              <button
+                id="mode-docs"
+                type="button"
+                class="text-xs px-3 py-1 rounded-full bg-slate-800 border border-slate-700"
+              >
+                Documents
+              </button>
+              <button
+                id="mode-people"
+                type="button"
+                class="text-xs px-3 py-1 rounded-full border border-slate-700 text-slate-300 hover:bg-slate-800"
+              >
+                People
+              </button>
+              <div class="flex-1"></div>
+              <span
+                id="results-count"
+                class="text-[0.7rem] text-slate-400 whitespace-nowrap"
+              >
+                Loading…
+              </span>
+            </div>
+          </div>
+
+          <!-- Documents panel -->
+          <div id="panel-docs" class="flex-1 flex flex-col overflow-hidden">
+            <div class="px-4 pt-2 pb-2 space-y-2 border-b border-slate-800">
+              <div>
+                <label
+                  for="search-query"
+                  class="block text-[0.65rem] uppercase tracking-wide text-slate-400 mb-1"
+                  >Query</label
+                >
+                <input
+                  id="search-query"
+                  type="text"
+                  placeholder='e.g. "flight manifest" AND from:epstein'
+                  class="w-full text-sm rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+              <div class="flex items-center gap-2 text-[0.65rem] text-slate-400">
+                <span>Fields:</span>
+                <code>subject:</code>
+                <code>from:</code>
+                <code>to:</code>
+                <code>body:</code>
+                <code>date:[2001-01-01 TO 2005-12-31]</code>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <div class="flex-1">
+                  <label
+                    for="filename-filter"
+                    class="block text-[0.65rem] uppercase tracking-wide text-slate-400 mb-1"
+                    >Filename contains</label
+                  >
+                  <input
+                    id="filename-filter"
+                    type="text"
+                    placeholder="e.g. flight"
+                    class="w-full text-xs rounded-md bg-slate-900 border border-slate-700 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  />
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label
+                    class="text-[0.65rem] uppercase tracking-wide text-slate-400"
+                    >Date range</label
+                  >
+                  <div class="flex items-center gap-1">
+                    <input
+                      id="date-from"
+                      type="date"
+                      class="w-28 text-[0.7rem] rounded-md bg-slate-900 border border-slate-700 px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                    <span class="text-[0.65rem] text-slate-500">→</span>
+                    <input
+                      id="date-to"
+                      type="date"
+                      class="w-28 text-[0.7rem] rounded-md bg-slate-900 border border-slate-700 px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span
+                    class="text-[0.65rem] uppercase tracking-wide text-slate-400"
+                    >Kinds</span
+                  >
+                  <button
+                    id="clear-filters"
+                    type="button"
+                    class="text-[0.65rem] text-emerald-400 hover:text-emerald-300"
+                  >
+                    Clear filters
+                  </button>
+                </div>
+                <div
+                  id="kinds-filter"
+                  class="flex flex-wrap gap-1 text-[0.7rem]"
+                ></div>
+              </div>
+
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <span
+                    class="text-[0.65rem] uppercase tracking-wide text-slate-400"
+                    >Timeline</span
+                  >
+                </div>
+                <div id="timeline" class="h-12 flex items-end"></div>
+              </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto px-2 py-2" id="results-list"></div>
+          </div>
+
+          <!-- People panel -->
+          <div
+            id="panel-people"
+            class="hidden flex-1 flex flex-col overflow-hidden"
+          >
+            <div class="px-4 pt-2 pb-2 space-y-2 border-b border-slate-800">
+              <div>
+                <label
+                  for="people-search"
+                  class="block text-[0.65rem] uppercase tracking-wide text-slate-400 mb-1"
+                  >People</label
+                >
+                <input
+                  id="people-search"
+                  type="text"
+                  placeholder="Search by name or email"
+                  class="w-full text-sm rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+              <p class="text-[0.7rem] text-slate-400">
+                Click a person to filter the document view to messages they
+                participate in.
+              </p>
+            </div>
+            <div
+              id="people-list"
+              class="flex-1 overflow-y-auto px-2 py-2 text-xs space-y-1"
+            ></div>
+          </div>
+        </aside>
+
+        <!-- Right pane: detail view -->
+        <section class="flex-1 flex flex-col overflow-hidden">
+          <div class="flex-1 overflow-y-auto px-4 py-4">
+            <div class="mx-auto max-w-3xl">
+              <h2
+                id="detail-title"
+                class="text-lg font-semibold tracking-tight mb-1"
+              >
+                Select a message
+              </h2>
+              <div
+                id="detail-meta"
+                class="text-xs text-slate-400 mb-2 break-words"
+              ></div>
+              <div
+                id="detail-chunk-nav"
+                class="flex items-center gap-2 mb-3 text-xs text-slate-300"
+              ></div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div>
+                  <h3 class="text-[0.75rem] font-semibold text-slate-300 mb-1">
+                    Participants
+                  </h3>
+                  <div
+                    id="detail-participants"
+                    class="flex flex-wrap gap-1 text-[0.7rem]"
+                  ></div>
+                </div>
+                <div>
+                  <h3 class="text-[0.75rem] font-semibold text-slate-300 mb-1">
+                    More like this (semantic)
+                  </h3>
+                  <div
+                    id="detail-neighbors"
+                    class="space-y-1 text-[0.7rem]"
+                  ></div>
+                </div>
+              </div>
+
+              <div class="mb-4">
+                <h3 class="text-[0.75rem] font-semibold text-slate-300 mb-1">
+                  Thread
+                </h3>
+                <div
+                  id="detail-thread-header"
+                  class="text-[0.7rem] text-slate-400 mb-1"
+                ></div>
+                <div
+                  id="detail-thread-list"
+                  class="space-y-1 text-[0.7rem]"
+                ></div>
+              </div>
+
+              <article
+                id="detail-body"
+                class="prose prose-invert max-w-none prose-sm bg-slate-950/60 border border-slate-800 rounded-lg p-4 whitespace-pre-wrap text-[0.75rem]"
+              ></article>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      (() => {
+        const state = {
+          docs: [],
+          docsById: new Map(),
+          allDocIds: [],
+          allKinds: [],
+          activeKinds: new Set(),
+          people: [],
+          peopleByAddress: new Map(),
+          timeline: [],
+          neighborsById: new Map(),
+          threadsById: new Map(),
+          docTextCache: new Map(),
+          searchWorker: null,
+          workerInitPromise: null,
+          pendingWorkerRequests: new Map(),
+          nextRequestId: 1,
+          termCache: new Map(),
+          queryText: "",
+          selectedPerson: null,
+          selectedDomain: null,
+          currentResults: [],
+          selectedDocId: null,
+          mode: "docs",
+        };
+
+        const elements = {};
+        let searchDebounce = null;
+        let searchGeneration = 0;
+
+        function cacheElements() {
+          elements.queryInput = document.getElementById("search-query");
+          elements.resultsList = document.getElementById("results-list");
+          elements.resultsCount = document.getElementById("results-count");
+          elements.kindsContainer = document.getElementById("kinds-filter");
+          elements.filenameInput = document.getElementById("filename-filter");
+          elements.dateFromInput = document.getElementById("date-from");
+          elements.dateToInput = document.getElementById("date-to");
+          elements.timeline = document.getElementById("timeline");
+          elements.modeDocsBtn = document.getElementById("mode-docs");
+          elements.modePeopleBtn = document.getElementById("mode-people");
+          elements.panelDocs = document.getElementById("panel-docs");
+          elements.panelPeople = document.getElementById("panel-people");
+          elements.peopleSearchInput = document.getElementById("people-search");
+          elements.peopleList = document.getElementById("people-list");
+          elements.detailTitle = document.getElementById("detail-title");
+          elements.detailMeta = document.getElementById("detail-meta");
+          elements.detailBody = document.getElementById("detail-body");
+          elements.detailParticipants =
+            document.getElementById("detail-participants");
+          elements.detailNeighbors =
+            document.getElementById("detail-neighbors");
+          elements.detailThreadHeader = document.getElementById(
+            "detail-thread-header"
+          );
+          elements.detailThreadList =
+            document.getElementById("detail-thread-list");
+          elements.detailChunkNav =
+            document.getElementById("detail-chunk-nav");
+          elements.clearFiltersBtn =
+            document.getElementById("clear-filters");
+        }
+
+        function setupWorker() {
+          if (state.searchWorker) return;
+          const worker = new Worker("search-worker.js");
+          state.searchWorker = worker;
+
+          worker.onmessage = (event) => {
+            const { type, requestId, ids, error } = event.data || {};
+            if (!requestId) return;
+            const entry = state.pendingWorkerRequests.get(requestId);
+            if (!entry) return;
+            state.pendingWorkerRequests.delete(requestId);
+            if (type === "error") entry.reject(new Error(error || "Worker error"));
+            else if (type === "init-ok") entry.resolve(true);
+            else if (type === "search-basic-result") entry.resolve(ids || []);
+            else entry.resolve(event.data);
+          };
+
+          state.workerInitPromise = sendWorkerRequest("init", {});
+        }
+
+        function sendWorkerRequest(type, payload) {
+          if (!state.searchWorker) throw new Error("Search worker not initialised");
+          const requestId = state.nextRequestId++;
+          const p = new Promise((resolve, reject) => {
+            state.pendingWorkerRequests.set(requestId, { resolve, reject });
+          });
+          state.searchWorker.postMessage({ type, requestId, payload });
+          return p;
+        }
+
+        async function searchLeaf(field, text) {
+          const f = field || "all";
+          const key = `${f}|${(text || "").toLowerCase()}`;
+          if (state.termCache.has(key)) return state.termCache.get(key);
+
+          setupWorker();
+          await state.workerInitPromise;
+
+          const ids = await sendWorkerRequest("search-basic", {
+            field: f,
+            query: text,
+            limit: 500,
+          });
+
+          const map = new Map();
+          ids.forEach((id, idx) => {
+            const sid = String(id);
+            const score = 1 / (1 + idx);
+            map.set(sid, score);
+          });
+          state.termCache.set(key, map);
+          return map;
+        }
+
+        function tokenizeQuery(input) {
+          const tokens = [];
+          const src = input || "";
+          const len = src.length;
+          let i = 0;
+
+          const isSpace = (c) => /\s/.test(c);
+
+          while (i < len) {
+            const c = src[i];
+            if (isSpace(c)) {
+              i += 1;
+              continue;
+            }
+            if ("()[]:".includes(c)) {
+              const type =
+                c === "("
+                  ? "LPAREN"
+                  : c === ")"
+                  ? "RPAREN"
+                  : c === "["
+                  ? "LBRACKET"
+                  : c === "]"
+                  ? "RBRACKET"
+                  : "COLON";
+              tokens.push({ type, value: c });
+              i += 1;
+              continue;
+            }
+            if (c === '"') {
+              let j = i + 1;
+              let buf = "";
+              while (j < len && src[j] !== '"') {
+                if (src[j] === "\\" && j + 1 < len) {
+                  buf += src[j + 1];
+                  j += 2;
+                } else {
+                  buf += src[j];
+                  j += 1;
+                }
+              }
+              i = j < len ? j + 1 : len;
+              tokens.push({ type: "PHRASE", value: buf });
+              continue;
+            }
+            let j = i;
+            while (
+              j < len &&
+              !isSpace(src[j]) &&
+              !("()[]:\"".includes(src[j]))
+            ) {
+              j += 1;
+            }
+            const raw = src.slice(i, j);
+            const upper = raw.toUpperCase();
+            if (upper === "AND" || upper === "OR" || upper === "NOT" || upper === "TO") {
+              tokens.push({ type: upper, value: upper });
+            } else {
+              tokens.push({ type: "WORD", value: raw });
+            }
+            i = j;
+          }
+          return tokens;
+        }
+
+        function parseQueryString(query) {
+          const tokens = tokenizeQuery(query || "");
+          let pos = 0;
+
+          const peek = () => tokens[pos] || null;
+          const consume = (expectedType) => {
+            const tok = tokens[pos] || null;
+            if (!tok) return null;
+            if (expectedType && tok.type !== expectedType) return null;
+            pos += 1;
+            return tok;
+          };
+
+          const isTermStart = (tok) =>
+            !!tok &&
+            (tok.type === "WORD" ||
+              tok.type === "PHRASE" ||
+              tok.type === "LPAREN");
+
+          function parseFieldExpression(fieldName) {
+            const tok = peek();
+            if (!tok) {
+              return { type: "term", field: fieldName, value: "" };
+            }
+            if (fieldName === "date") {
+              if (tok.type === "LBRACKET") {
+                consume("LBRACKET");
+                const startTok = peek();
+                let startVal = null;
+                if (startTok && (startTok.type === "WORD" || startTok.type === "PHRASE")) {
+                  consume(startTok.type);
+                  startVal = startTok.value;
+                }
+                const maybeTo = peek();
+                if (maybeTo && maybeTo.type === "TO") consume("TO");
+                const endTok = peek();
+                let endVal = null;
+                if (endTok && (endTok.type === "WORD" || endTok.type === "PHRASE")) {
+                  consume(endTok.type);
+                  endVal = endTok.value;
+                }
+                if (peek() && peek().type === "RBRACKET") consume("RBRACKET");
+                return {
+                  type: "filter",
+                  filter: "date_range",
+                  from: startVal || null,
+                  to: endVal || null,
+                };
+              }
+            }
+            consume(tok.type);
+            const value = tok.value;
+            const searchFieldNames = [
+              "subject",
+              "from",
+              "to",
+              "body",
+              "text",
+              "content",
+            ];
+            if (searchFieldNames.includes(fieldName)) {
+              let mappedField = fieldName;
+              if (
+                mappedField === "body" ||
+                mappedField === "text" ||
+                mappedField === "content"
+              ) {
+                mappedField = "search_text";
+              }
+              return { type: "term", field: mappedField, value };
+            }
+            const participantFields = ["participant", "person", "people"];
+            if (participantFields.includes(fieldName)) {
+              return { type: "filter", filter: "participant", value };
+            }
+            if (fieldName === "domain") {
+              return { type: "filter", filter: "domain", value };
+            }
+            if (fieldName === "filename" || fieldName === "file") {
+              return { type: "filter", filter: "filename", value };
+            }
+            if (fieldName === "kind" || fieldName === "type") {
+              return { type: "filter", filter: "kind", value };
+            }
+            return { type: "term", field: fieldName, value };
+          }
+
+          function parsePrimary() {
+            const tok = peek();
+            if (!tok) return null;
+            if (tok.type === "LPAREN") {
+              consume("LPAREN");
+              const expr = parseOr();
+              if (peek() && peek().type === "RPAREN") consume("RPAREN");
+              return expr;
+            }
+            if (tok.type === "WORD") {
+              const next = tokens[pos + 1];
+              if (next && next.type === "COLON") {
+                const fieldName = tok.value.toLowerCase();
+                consume("WORD");
+                consume("COLON");
+                return parseFieldExpression(fieldName);
+              }
+            }
+            consume(tok.type);
+            return { type: "term", field: null, value: tok.value };
+          }
+
+          function parseNot() {
+            let negate = false;
+            while (true) {
+              const tok = peek();
+              if (tok && tok.type === "NOT") {
+                consume("NOT");
+                negate = !negate;
+              } else {
+                break;
+              }
+            }
+            const operand = parsePrimary();
+            if (!operand) return null;
+            if (negate) return { type: "not", node: operand };
+            return operand;
+          }
+
+          function parseAnd() {
+            let node = parseNot();
+            while (true) {
+              const tok = peek();
+              if (!tok) break;
+              if (tok.type === "AND") {
+                consume("AND");
+                const rhs = parseNot();
+                if (!rhs) break;
+                node = { type: "and", left: node, right: rhs };
+              } else if (tok.type === "OR" || tok.type === "RPAREN") {
+                break;
+              } else if (isTermStart(tok)) {
+                const rhs = parseNot();
+                if (!rhs) break;
+                node = { type: "and", left: node, right: rhs };
+              } else {
+                break;
+              }
+            }
+            return node;
+          }
+
+          function parseOr() {
+            let node = parseAnd();
+            while (true) {
+              const tok = peek();
+              if (!tok || tok.type !== "OR") break;
+              consume("OR");
+              const rhs = parseAnd();
+              if (!rhs) break;
+              node = { type: "or", left: node, right: rhs };
+            }
+            return node;
+          }
+
+          return parseOr();
+        }
+
+        function buildFilterMap(filterNode) {
+          const kind = filterNode.filter;
+          const map = new Map();
+          const valueRaw = (filterNode.value || "").toLowerCase();
+
+          if (kind === "date_range") {
+            const from = filterNode.from ? filterNode.from.slice(0, 10) : null;
+            const to = filterNode.to ? filterNode.to.slice(0, 10) : null;
+            for (const doc of state.docs) {
+              const dk = doc.date_key;
+              if (!dk) continue;
+              if (from && dk < from) continue;
+              if (to && dk > to) continue;
+              map.set(String(doc.id), 1);
+            }
+            return map;
+          }
+
+          if (!valueRaw) return map;
+
+          if (kind === "participant") {
+            for (const doc of state.docs) {
+              const participants = doc.participants || [];
+              const match = participants.some((addr) =>
+                addr.toLowerCase().includes(valueRaw)
+              );
+              if (match) map.set(String(doc.id), 1);
+            }
+          } else if (kind === "domain") {
+            for (const doc of state.docs) {
+              const domains = doc.domains || [];
+              const match = domains.some((d) =>
+                (d || "").toLowerCase().includes(valueRaw)
+              );
+              if (match) map.set(String(doc.id), 1);
+            }
+          } else if (kind === "filename") {
+            for (const doc of state.docs) {
+              const fn = (doc.filename || "").toLowerCase();
+              if (fn.includes(valueRaw)) map.set(String(doc.id), 1);
+            }
+          } else if (kind === "kind") {
+            for (const doc of state.docs) {
+              const k = (doc.kind || "").toLowerCase();
+              if (k.includes(valueRaw)) map.set(String(doc.id), 1);
+            }
+          }
+          return map;
+        }
+
+        async function evaluateAst(ast) {
+          if (!ast) {
+            const map = new Map();
+            for (const id of state.allDocIds) {
+              map.set(String(id), 1);
+            }
+            return map;
+          }
+
+          switch (ast.type) {
+            case "term": {
+              const text = ast.value;
+              if (!text) {
+                const map = new Map();
+                for (const id of state.allDocIds) {
+                  map.set(String(id), 1);
+                }
+                return map;
+              }
+              return searchLeaf(ast.field, text);
+            }
+            case "filter":
+              return buildFilterMap(ast);
+            case "and": {
+              const left = await evaluateAst(ast.left);
+              const right = await evaluateAst(ast.right);
+              const result = new Map();
+              for (const [id, scoreL] of left.entries()) {
+                if (right.has(id)) {
+                  const scoreR = right.get(id);
+                  const score = Math.max(scoreL, scoreR);
+                  result.set(id, score);
+                }
+              }
+              return result;
+            }
+            case "or": {
+              const left = await evaluateAst(ast.left);
+              const right = await evaluateAst(ast.right);
+              const result = new Map(left);
+              for (const [id, scoreR] of right.entries()) {
+                const scoreL = result.get(id) || 0;
+                if (scoreR > scoreL) result.set(id, scoreR);
+              }
+              return result;
+            }
+            case "not": {
+              const inner = await evaluateAst(ast.node);
+              const result = new Map();
+              for (const id of state.allDocIds) {
+                const sid = String(id);
+                if (!inner.has(sid)) result.set(sid, 1);
+              }
+              return result;
+            }
+            default:
+              return new Map();
+          }
+        }
+
+        function applyUiFilters(resultMap) {
+          const rows = [];
+          const activeKinds = state.activeKinds;
+          const filenameFilter =
+            (elements.filenameInput.value || "").toLowerCase();
+          const dateFrom = elements.dateFromInput.value || null;
+          const dateTo = elements.dateToInput.value || null;
+          const selectedPerson = state.selectedPerson;
+          const selectedDomain = state.selectedDomain;
+
+          const hasSearch = resultMap && resultMap.size > 0;
+          const baseIds = hasSearch
+            ? Array.from(resultMap.keys())
+            : state.allDocIds.map(String);
+
+          for (const id of baseIds) {
+            const doc = state.docsById.get(String(id));
+            if (!doc) continue;
+            let score = hasSearch ? resultMap.get(String(id)) || 0.0001 : 0.0001;
+
+            if (activeKinds && activeKinds.size && !activeKinds.has(doc.kind))
+              continue;
+
+            if (filenameFilter) {
+              const fn = (doc.filename || "").toLowerCase();
+              if (!fn.includes(filenameFilter)) continue;
+            }
+
+            if (dateFrom || dateTo) {
+              const dk = doc.date_key;
+              if (!dk) continue;
+              if (dateFrom && dk < dateFrom) continue;
+              if (dateTo && dk > dateTo) continue;
+            }
+
+            if (selectedPerson) {
+              const participants = doc.participants || [];
+              if (!participants.includes(selectedPerson)) continue;
+            }
+
+            if (selectedDomain) {
+              const domains = doc.domains || [];
+              if (!domains.includes(selectedDomain)) continue;
+            }
+
+            rows.push({ doc, score });
+          }
+
+          rows.sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            const da = a.doc.date_key || "";
+            const db = b.doc.date_key || "";
+            if (da !== db) return db.localeCompare(da);
+            return String(a.doc.id).localeCompare(String(b.doc.id));
+          });
+
+          return rows;
+        }
+
+        function renderResultsList() {
+          const list = elements.resultsList;
+          list.innerHTML = "";
+          const results = state.currentResults || [];
+
+          if (!results.length) {
+            const p = document.createElement("p");
+            p.className = "text-sm text-slate-400 px-2 py-2";
+            p.textContent = "No results.";
+            list.appendChild(p);
+            return;
+          }
+
+          const maxShown = 200;
+          results.slice(0, maxShown).forEach((doc) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.dataset.docId = String(doc.id);
+            btn.className =
+              "block w-full text-left px-3 py-2 rounded-lg mb-1 border border-slate-800 bg-slate-950/80 hover:bg-slate-900/80 " +
+              (String(state.selectedDocId) === String(doc.id)
+                ? "ring-1 ring-emerald-500"
+                : "");
+
+            const title = document.createElement("div");
+            title.className = "text-sm font-medium truncate";
+            title.textContent = doc.subject || "(No subject)";
+
+            const meta = document.createElement("div");
+            meta.className = "text-[0.7rem] text-slate-400 truncate";
+            meta.textContent = [
+              doc.date_key || "",
+              doc.from || "",
+              doc.to || "",
+              doc.filename || "",
+            ]
+              .filter(Boolean)
+              .join(" • ");
+
+            const preview = document.createElement("div");
+            preview.className =
+              "text-[0.7rem] text-slate-300 line-clamp-2 mt-0.5";
+            preview.textContent = doc.preview || "";
+
+            btn.appendChild(title);
+            btn.appendChild(meta);
+            btn.appendChild(preview);
+            btn.addEventListener("click", () => selectDoc(doc.id));
+
+            list.appendChild(btn);
+          });
+        }
+
+        function updateResultCount() {
+          const total = state.currentResults ? state.currentResults.length : 0;
+          elements.resultsCount.textContent = `${total} result${
+            total === 1 ? "" : "s"
+          }`;
+        }
+
+        function renderKindsFilter() {
+          const container = elements.kindsContainer;
+          container.innerHTML = "";
+          if (!state.allKinds || !state.allKinds.length) return;
+
+          state.allKinds.forEach((kind) => {
+            const id = `kind-${kind.replace(/[^a-z0-9]+/gi, "-")}`;
+            const label = document.createElement("label");
+            label.className =
+              "inline-flex items-center space-x-1 text-[0.7rem] bg-slate-900 rounded-full px-2 py-1 cursor-pointer hover:bg-slate-800";
+
+            const inp = document.createElement("input");
+            inp.type = "checkbox";
+            inp.className = "accent-emerald-400";
+            inp.id = id;
+            inp.checked = state.activeKinds.has(kind);
+            inp.addEventListener("change", () => {
+              if (inp.checked) state.activeKinds.add(kind);
+              else state.activeKinds.delete(kind);
+              scheduleSearch();
+            });
+
+            const span = document.createElement("span");
+            span.textContent = kind;
+
+            label.appendChild(inp);
+            label.appendChild(span);
+            container.appendChild(label);
+          });
+        }
+
+        function renderTimeline() {
+          const container = elements.timeline;
+          container.innerHTML = "";
+          const buckets = state.timeline || [];
+          if (!buckets.length) {
+            container.textContent = "";
+            return;
+          }
+          const maxCount = buckets.reduce(
+            (m, b) => (b.count > m ? b.count : m),
+            0
+          );
+          const wrapper = document.createElement("div");
+          wrapper.className = "flex items-end space-x-0.5 w-full h-full";
+          buckets.forEach((b) => {
+            const bar = document.createElement("div");
+            const ratio = maxCount ? b.count / maxCount : 0;
+            const h = Math.max(2, Math.round(ratio * 40));
+            bar.style.height = `${h}px`;
+            bar.className =
+              "flex-1 bg-slate-700 hover:bg-emerald-400 transition-colors cursor-help";
+            bar.title = `${b.date}: ${b.count} messages`;
+            wrapper.appendChild(bar);
+          });
+          container.appendChild(wrapper);
+        }
+
+        function renderPeoplePanel() {
+          const listEl = elements.peopleList;
+          listEl.innerHTML = "";
+          const q = (elements.peopleSearchInput.value || "").toLowerCase();
+
+          let candidates = state.people || [];
+          if (q) {
+            candidates = candidates.filter((p) => {
+              const name = (p.display_name || "").toLowerCase();
+              const addr = (p.address || "").toLowerCase();
+              return name.includes(q) || addr.includes(q);
+            });
+          }
+
+          const top = candidates.slice(0, 200);
+          if (!top.length) {
+            const p = document.createElement("p");
+            p.className = "text-[0.75rem] text-slate-400 px-2 py-2";
+            p.textContent = "No people matched.";
+            listEl.appendChild(p);
+            return;
+          }
+
+          top.forEach((person) => {
+            const li = document.createElement("button");
+            li.type = "button";
+            li.className =
+              "w-full text-left px-3 py-2 rounded-lg hover:bg-slate-900 border border-slate-800";
+
+            const line1 = document.createElement("div");
+            line1.className = "text-[0.8rem] font-medium truncate";
+            line1.textContent = person.display_name
+              ? `${person.display_name} <${person.address}>`
+              : person.address;
+
+            const line2 = document.createElement("div");
+            line2.className = "text-[0.7rem] text-slate-400";
+            const cos = (person.top_co || []).slice(0, 4).map((c) => c.address);
+            line2.textContent = `${person.message_count} messages${
+              cos.length ? " • Co-participants: " + cos.join(", ") : ""
+            }`;
+
+            li.appendChild(line1);
+            li.appendChild(line2);
+
+            li.addEventListener("click", () => {
+              state.selectedPerson = person.address;
+              switchMode("docs");
+              scheduleSearch(0);
+            });
+
+            listEl.appendChild(li);
+          });
+        }
+
+        function buildThreadsIndex() {
+          const threads = new Map();
+          for (const doc of state.docs) {
+            if (!doc.thread_id) continue;
+            const tid = doc.thread_id;
+            let arr = threads.get(tid);
+            if (!arr) {
+              arr = [];
+              threads.set(tid, arr);
+            }
+            arr.push(doc);
+          }
+          for (const [tid, arr] of threads.entries()) {
+            arr.sort((a, b) => {
+              const da = a.date_key || "";
+              const db = b.date_key || "";
+              if (da !== db) return da.localeCompare(db);
+              if (
+                typeof a.chunk_index === "number" &&
+                typeof b.chunk_index === "number"
+              ) {
+                return a.chunk_index - b.chunk_index;
+              }
+              return String(a.id).localeCompare(String(b.id));
+            });
+          }
+          state.threadsById = threads;
+        }
+
+        function loadDocText(id) {
+          const key = String(id);
+          if (state.docTextCache.has(key)) return state.docTextCache.get(key);
+          const p = fetch(`docs/${encodeURIComponent(key)}.txt`)
+            .then((res) => {
+              if (!res.ok) throw new Error(`HTTP ${res.status}`);
+              return res.text();
+            })
+            .catch((err) => {
+              console.error("Failed to load doc text", err);
+              return "";
+            });
+          state.docTextCache.set(key, p);
+          return p;
+        }
+
+        function renderParticipants(doc) {
+          const container = elements.detailParticipants;
+          container.innerHTML = "";
+          const participants = doc.participants || [];
+          if (!participants.length) {
+            const span = document.createElement("span");
+            span.className = "text-[0.7rem] text-slate-400";
+            span.textContent = "No parsed participants.";
+            container.appendChild(span);
+            return;
+          }
+          participants.forEach((addr) => {
+            const person = state.peopleByAddress.get(addr);
+            const label = person
+              ? person.display_name
+                ? `${person.display_name} <${addr}>`
+                : addr
+              : addr;
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className =
+              "px-2 py-1 rounded-full border border-slate-700 text-[0.7rem] hover:bg-slate-800 mr-1 mb-1";
+            btn.textContent = label;
+            btn.addEventListener("click", () => {
+              state.selectedPerson = addr;
+              scheduleSearch(0);
+              switchMode("docs");
+            });
+            container.appendChild(btn);
+          });
+        }
+
+        function renderNeighbors(doc) {
+          const container = elements.detailNeighbors;
+          container.innerHTML = "";
+          const idStr = String(doc.id);
+          const neighbors = state.neighborsById.get(idStr) || [];
+          if (!neighbors.length) {
+            const span = document.createElement("span");
+            span.className = "text-[0.7rem] text-slate-400";
+            span.textContent = "No precomputed semantic neighbors.";
+            container.appendChild(span);
+            return;
+          }
+          neighbors.slice(0, 10).forEach((entry) => {
+            const neighDoc = state.docsById.get(String(entry.id));
+            if (!neighDoc) return;
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className =
+              "w-full text-left px-2 py-1 rounded-md hover:bg-slate-900";
+            const title = document.createElement("div");
+            title.className = "text-[0.75rem] font-medium truncate";
+            title.textContent = neighDoc.subject || "(No subject)";
+            const meta = document.createElement("div");
+            meta.className = "text-[0.7rem] text-slate-400 truncate";
+            const pct =
+              typeof entry.score === "number"
+                ? Math.round(entry.score * 100)
+                : null;
+            meta.textContent = [
+              neighDoc.date_key || "",
+              neighDoc.filename || "",
+              pct != null ? `sim ${pct}%` : "",
+            ]
+              .filter(Boolean)
+              .join(" • ");
+            btn.appendChild(title);
+            btn.appendChild(meta);
+            btn.addEventListener("click", () => selectDoc(neighDoc.id));
+            container.appendChild(btn);
+          });
+        }
+
+        function renderThread(doc) {
+          const headerEl = elements.detailThreadHeader;
+          const listEl = elements.detailThreadList;
+          headerEl.textContent = "";
+          listEl.innerHTML = "";
+
+          const tid = doc.thread_id;
+          if (!tid) {
+            headerEl.textContent =
+              "This message is not part of a reconstructed thread.";
+            return;
+          }
+
+          const threadDocs = state.threadsById.get(tid) || [];
+          if (!threadDocs.length) {
+            headerEl.textContent = "Thread information unavailable.";
+            return;
+          }
+
+          headerEl.textContent = `Thread ${tid} • ${threadDocs.length} messages`;
+
+          const viewAllBtn = document.createElement("button");
+          viewAllBtn.type = "button";
+          viewAllBtn.className =
+            "ml-2 text-[0.7rem] text-emerald-400 hover:text-emerald-300";
+          viewAllBtn.textContent = "View entire thread in reader";
+          viewAllBtn.addEventListener("click", async () => {
+            const parts = [];
+            for (let i = 0; i < threadDocs.length; i += 1) {
+              const td = threadDocs[i];
+              const text = await loadDocText(td.id);
+              parts.push(
+                `----- Message ${i + 1}/${threadDocs.length} • ${
+                  td.date_key || ""
+                } • ${td.subject || "(No subject)"} -----\n\n${text}`
+              );
+            }
+            const combined = parts.join("\n\n\n");
+            if (String(state.selectedDocId) === String(doc.id)) {
+              elements.detailBody.textContent = combined;
+            }
+          });
+          headerEl.appendChild(viewAllBtn);
+
+          threadDocs.forEach((td) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className =
+              "w-full text-left px-2 py-1 rounded-md text-[0.7rem] mb-1 hover:bg-slate-900 " +
+              (String(td.id) === String(doc.id) ? "bg-slate-900" : "");
+            const subjectText = td.subject || "(No subject)";
+            const datePart = td.date_key || "";
+            btn.textContent = `${datePart} • ${subjectText}`;
+            btn.addEventListener("click", () => selectDoc(td.id));
+            listEl.appendChild(btn);
+          });
+        }
+
+        function renderChunkNav(doc) {
+          const el = elements.detailChunkNav;
+          el.innerHTML = "";
+          const count = doc.chunk_count || 1;
+          const idx = (doc.chunk_index || 0) + 1;
+          if (count <= 1) return;
+
+          const span = document.createElement("span");
+          span.className = "text-[0.7rem] text-slate-400 mr-2";
+          span.textContent = `Chunk ${idx} of ${count}`;
+          el.appendChild(span);
+
+          const prevBtn = document.createElement("button");
+          prevBtn.type = "button";
+          prevBtn.className =
+            "text-[0.7rem] px-2 py-1 rounded border border-slate-700 mr-1 hover:bg-slate-800 disabled:opacity-40";
+          prevBtn.textContent = "Prev";
+          prevBtn.disabled = idx <= 1;
+          prevBtn.addEventListener("click", () => {
+            const siblings = state.docs.filter(
+              (d) => d.message_id === doc.message_id
+            );
+            const target = siblings.find(
+              (d) => d.chunk_index === doc.chunk_index - 1
+            );
+            if (target) selectDoc(target.id);
+          });
+
+          const nextBtn = document.createElement("button");
+          nextBtn.type = "button";
+          nextBtn.className =
+            "text-[0.7rem] px-2 py-1 rounded border border-slate-700 hover:bg-slate-800 disabled:opacity-40";
+          nextBtn.textContent = "Next";
+          nextBtn.disabled = idx >= count;
+          nextBtn.addEventListener("click", () => {
+            const siblings = state.docs.filter(
+              (d) => d.message_id === doc.message_id
+            );
+            const target = siblings.find(
+              (d) => d.chunk_index === doc.chunk_index + 1
+            );
+            if (target) selectDoc(target.id);
+          });
+
+          const fullBtn = document.createElement("button");
+          fullBtn.type = "button";
+          fullBtn.className =
+            "text-[0.7rem] ml-2 px-2 py-1 rounded border border-slate-700 hover:bg-slate-800";
+          fullBtn.textContent = "View full file";
+          fullBtn.addEventListener("click", async () => {
+            const siblings = state.docs
+              .filter((d) => d.message_id === doc.message_id)
+              .sort((a, b) => a.chunk_index - b.chunk_index);
+            const parts = [];
+            for (const s of siblings) {
+              const text = await loadDocText(s.id);
+              parts.push(text);
+            }
+            const combined = parts.join("\n\n");
+            if (String(state.selectedDocId) === String(doc.id)) {
+              elements.detailBody.textContent = combined;
+            }
+          });
+
+          el.appendChild(prevBtn);
+          el.appendChild(nextBtn);
+          el.appendChild(fullBtn);
+        }
+
+        function clearDetailPanel() {
+          elements.detailTitle.textContent = "Select a message";
+          elements.detailMeta.textContent = "";
+          elements.detailBody.textContent = "";
+          elements.detailParticipants.innerHTML = "";
+          elements.detailNeighbors.innerHTML = "";
+          elements.detailThreadHeader.textContent = "";
+          elements.detailThreadList.innerHTML = "";
+          elements.detailChunkNav.innerHTML = "";
+        }
+
+        function renderSelectedDoc() {
+          const idStr = String(state.selectedDocId || "");
+          const doc = state.docsById.get(idStr);
+          if (!doc) {
+            clearDetailPanel();
+            return;
+          }
+
+          elements.detailTitle.textContent = doc.subject || "(No subject)";
+          const metaParts = [];
+          if (doc.date_key) metaParts.push(doc.date_key);
+          if (doc.from) metaParts.push(`From: ${doc.from}`);
+          if (doc.to) metaParts.push(`To: ${doc.to}`);
+          if (doc.filename) metaParts.push(doc.filename);
+          elements.detailMeta.textContent = metaParts.join(" • ");
+
+          renderChunkNav(doc);
+          renderParticipants(doc);
+          renderNeighbors(doc);
+          renderThread(doc);
+
+          elements.detailBody.textContent = "Loading full text…";
+          loadDocText(doc.id).then((text) => {
+            if (String(state.selectedDocId) !== idStr) return;
+            elements.detailBody.textContent = text || "(No body text)";
+          });
+        }
+
+        function selectDoc(id) {
+          state.selectedDocId = id;
+          renderResultsList();
+          renderSelectedDoc();
+          persistStateToUrl();
+        }
+
+        function scheduleSearch(delay = 200) {
+          if (searchDebounce) clearTimeout(searchDebounce);
+          searchDebounce = setTimeout(() => {
+            searchDebounce = null;
+            runSearch();
+          }, delay);
+        }
+
+        async function runSearch() {
+          if (!state.docs.length) return;
+          const generation = ++searchGeneration;
+          const query = elements.queryInput.value || "";
+          state.queryText = query;
+          const ast = parseQueryString(query);
+
+          let resultMap;
+          try {
+            resultMap = await evaluateAst(ast);
+          } catch (err) {
+            console.error("Search evaluation failed", err);
+            if (generation !== searchGeneration) return;
+            resultMap = new Map();
+          }
+
+          if (generation !== searchGeneration) return;
+
+          const filtered = applyUiFilters(resultMap);
+          state.currentResults = filtered.map((x) => x.doc);
+          renderResultsList();
+          updateResultCount();
+          persistStateToUrl();
+
+          if (state.currentResults.length) {
+            const idStr = String(state.selectedDocId || "");
+            const stillVisible = idStr
+              ? state.currentResults.some(
+                  (d) => String(d.id) === String(idStr)
+                )
+              : false;
+            if (!stillVisible) {
+              selectDoc(state.currentResults[0].id);
+            } else {
+              renderSelectedDoc();
+            }
+          } else {
+            clearDetailPanel();
+          }
+        }
+
+        function switchMode(mode) {
+          if (state.mode === mode) return;
+          state.mode = mode;
+          if (mode === "docs") {
+            elements.modeDocsBtn.classList.add("bg-slate-800");
+            elements.modePeopleBtn.classList.remove("bg-slate-800");
+            elements.panelDocs.classList.remove("hidden");
+            elements.panelPeople.classList.add("hidden");
+          } else {
+            elements.modePeopleBtn.classList.add("bg-slate-800");
+            elements.modeDocsBtn.classList.remove("bg-slate-800");
+            elements.panelPeople.classList.remove("hidden");
+            elements.panelDocs.classList.add("hidden");
+            renderPeoplePanel();
+          }
+        }
+
+        function clearFilters() {
+          state.activeKinds = new Set(state.allKinds);
+          elements.filenameInput.value = "";
+          elements.dateFromInput.value = "";
+          elements.dateToInput.value = "";
+          state.selectedPerson = null;
+          state.selectedDomain = null;
+          renderKindsFilter();
+          scheduleSearch();
+        }
+
+        function restoreStateFromUrl() {
+          if (!location.hash || location.hash.length <= 1) return;
+          const hash = location.hash.slice(1);
+          const params = new URLSearchParams(hash);
+
+          const q = params.get("q");
+          if (q != null) {
+            elements.queryInput.value = q;
+            state.queryText = q;
+          }
+
+          const kindsParam = params.get("kinds");
+          if (kindsParam) {
+            const allowed = new Set(
+              kindsParam.split(",").filter((x) => x.length)
+            );
+            state.activeKinds = new Set();
+            for (const kind of state.allKinds) {
+              if (allowed.has(kind)) state.activeKinds.add(kind);
+            }
+          } else {
+            state.activeKinds = new Set(state.allKinds);
+          }
+
+          const file = params.get("file");
+          if (file != null) elements.filenameInput.value = file;
+
+          const from = params.get("from");
+          const to = params.get("to");
+          if (from) elements.dateFromInput.value = from;
+          if (to) elements.dateToInput.value = to;
+
+          const person = params.get("person");
+          if (person) state.selectedPerson = person;
+
+          const doc = params.get("doc");
+          if (doc) state.selectedDocId = doc;
+        }
+
+        function persistStateToUrl() {
+          const params = new URLSearchParams();
+          if (state.queryText && state.queryText.trim()) {
+            params.set("q", state.queryText.trim());
+          }
+          const activeKindsArray = Array.from(state.activeKinds || []);
+          if (
+            activeKindsArray.length &&
+            activeKindsArray.length !== state.allKinds.length
+          ) {
+            params.set("kinds", activeKindsArray.join(","));
+          }
+          const fnFilter = elements.filenameInput.value.trim();
+          if (fnFilter) params.set("file", fnFilter);
+          const df = elements.dateFromInput.value;
+          const dt = elements.dateToInput.value;
+          if (df) params.set("from", df);
+          if (dt) params.set("to", dt);
+          if (state.selectedPerson) params.set("person", state.selectedPerson);
+          if (state.selectedDocId)
+            params.set("doc", String(state.selectedDocId));
+
+          const hash = params.toString();
+          const base = location.pathname + location.search;
+          const url = hash ? `${base}#${hash}` : base;
+          history.replaceState(null, "", url);
+        }
+
+        function attachListeners() {
+          elements.queryInput.addEventListener("input", () => scheduleSearch());
+          elements.filenameInput.addEventListener("input", () =>
+            scheduleSearch()
+          );
+          elements.dateFromInput.addEventListener("change", () =>
+            scheduleSearch()
+          );
+          elements.dateToInput.addEventListener("change", () =>
+            scheduleSearch()
+          );
+          elements.clearFiltersBtn.addEventListener("click", () =>
+            clearFilters()
+          );
+          elements.modeDocsBtn.addEventListener("click", () =>
+            switchMode("docs")
+          );
+          elements.modePeopleBtn.addEventListener("click", () =>
+            switchMode("people")
+          );
+          elements.peopleSearchInput.addEventListener("input", () =>
+            renderPeoplePanel()
+          );
+        }
+
+        async function loadAllData() {
+          try {
+            const [metaRes, timelineRes, peopleRes, neighborsRes] =
+              await Promise.all([
+                fetch("data/meta.json"),
+                fetch("data/timeline.json"),
+                fetch("data/people.json"),
+                fetch("data/neighbors.json"),
+              ]);
+            const [meta, timeline, people, neighbors] = await Promise.all([
+              metaRes.json(),
+              timelineRes.ok ? timelineRes.json() : { buckets: [] },
+              peopleRes.ok ? peopleRes.json() : [],
+              neighborsRes.ok ? neighborsRes.json() : {},
+            ]);
+
+            state.docs = meta || [];
+            state.docsById = new Map(
+              state.docs.map((d) => [String(d.id), d])
+            );
+            state.allDocIds = state.docs.map((d) => d.id);
+
+            const kindSet = new Set();
+            state.docs.forEach((d) => {
+              if (d.kind) kindSet.add(d.kind);
+            });
+            state.allKinds = Array.from(kindSet).sort();
+            state.activeKinds = new Set(state.allKinds);
+
+            state.timeline = (timeline && timeline.buckets) || [];
+            state.people = people || [];
+            state.peopleByAddress = new Map(
+              state.people.map((p) => [p.address, p])
+            );
+
+            const neighborsMap = new Map();
+            if (neighbors && typeof neighbors === "object") {
+              Object.keys(neighbors).forEach((k) => {
+                neighborsMap.set(String(k), neighbors[k] || []);
+              });
+            }
+            state.neighborsById = neighborsMap;
+
+            buildThreadsIndex();
+            renderKindsFilter();
+            renderTimeline();
+            switchMode("docs");
+
+            if (state.timeline.length) {
+              const dates = state.timeline.map((b) => b.date).sort();
+              elements.dateFromInput.min = dates[0];
+              elements.dateFromInput.max = dates[dates.length - 1];
+              elements.dateToInput.min = dates[0];
+              elements.dateToInput.max = dates[dates.length - 1];
+            }
+
+            restoreStateFromUrl();
+            scheduleSearch(0);
+          } catch (err) {
+            console.error("Failed to load data", err);
+            elements.resultsCount.textContent =
+              "Failed to load data (see console).";
+          }
+        }
+
+        function init() {
+          cacheElements();
+          attachListeners();
+          loadAllData();
+        }
+
+        document.addEventListener("DOMContentLoaded", init);
+      })();
+    </script>
+  </body>
+</html>
+
