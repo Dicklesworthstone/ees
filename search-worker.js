@@ -4,9 +4,14 @@
 // FlexSearch index, and services search + text retrieval requests.
 
 let docsMeta = [];
-let texts = new Map();
-let index = null;
+let indexLite = null;
+let indexFull = null;
+let activeIndex = null;
 let initPromise = null;
+let fullIndexPromise = null;
+let dbInstance = null;
+const textCache = new Map();
+const TEXT_CACHE_LIMIT = 200; // LRU cap for decompressed texts
 
 const FLEXSEARCH_URL = "vendor/flexsearch.bundle.min.js";
 const PAKO_URL = "vendor/pako.min.js";
@@ -14,7 +19,23 @@ const SQL_JS_VERSION = "1.11.0";
 const SQL_JS_URL = "vendor/sql-wasm.js";
 const SQLITE_PATH = "data/epstein.sqlite";
 
-const INDEX_CONFIG = {
+const INDEX_LITE_CONFIG = {
+  document: {
+    id: "id",
+    index: [
+      { field: "subject", tokenize: "forward" },
+      { field: "from", tokenize: "forward" },
+      { field: "to", tokenize: "forward" },
+      { field: "preview", tokenize: "forward" },
+      { field: "domains", tokenize: "forward" }
+    ],
+    store: ["id", "filename", "kind", "from", "to", "subject", "date", "preview"]
+  },
+  tokenize: "forward",
+  context: false
+};
+
+const INDEX_FULL_CONFIG = {
   document: {
     id: "id",
     index: [
@@ -49,6 +70,7 @@ async function loadDatabase() {
     if (!resp.ok) throw new Error(`Failed to fetch ${SQLITE_PATH}: ${resp.status}`);
     const buffer = await resp.arrayBuffer();
     const db = new SQL.Database(new Uint8Array(buffer));
+    dbInstance = db;
 
     const meta = [];
     const textMap = new Map();
@@ -57,19 +79,17 @@ async function loadDatabase() {
     const stmt = db.prepare(`
       SELECT id, message_id, chunk_index, chunk_count, filename, kind,
              subject, "from", "to", cc, bcc, participants, domains,
-             date, date_key, thread_id, preview, text_compressed
+             date, date_key, thread_id, preview
       FROM docs
       ORDER BY id
     `);
 
-    index = new FlexSearch.Document(INDEX_CONFIG);
+    indexLite = new FlexSearch.Document(INDEX_LITE_CONFIG);
 
     while (stmt.step()) {
       const row = stmt.getAsObject();
       const participants = row.participants ? JSON.parse(row.participants) : [];
       const domains = row.domains ? JSON.parse(row.domains) : [];
-      const compressed = row.text_compressed;
-      const text = decoder.decode(pako.inflate(new Uint8Array(compressed)));
 
       const docMeta = {
         id: row.id,
@@ -92,10 +112,11 @@ async function loadDatabase() {
       };
 
       meta.push(docMeta);
-      textMap.set(row.id, text);
-      index.add({ ...docMeta, text });
+      indexLite.add({ ...docMeta, preview: docMeta.preview || "" });
     }
     stmt.free();
+
+    activeIndex = indexLite;
 
     const timeline = [];
     const tStmt = db.prepare("SELECT date, count FROM timeline ORDER BY date");
@@ -140,9 +161,14 @@ async function loadDatabase() {
     thStmt.free();
 
     docsMeta = meta;
-    texts = textMap;
 
-    return { docs: meta, timeline, people, threads };
+    // Start full-text index build in the background
+    fullIndexPromise = buildFullIndex(db, decoder, meta).catch((err) => {
+      // Post error but keep lite index available
+      self.postMessage({ type: "error", requestId: null, error: `full-index: ${err}` });
+    });
+
+    return { docs: meta, timeline, people, threads, index_state: "lite" };
   })();
 
   return initPromise;
@@ -150,8 +176,8 @@ async function loadDatabase() {
 
 function searchBasic(query, limit = 400, field = null) {
   const q = (query || "").trim();
-  if (!q || !index) return docsMeta.map((d) => d.id).slice(0, limit);
-  const res = index.search({ query: q, enrich: true, limit, index: field || undefined });
+  if (!q || !activeIndex) return docsMeta.map((d) => d.id).slice(0, limit);
+  const res = activeIndex.search({ query: q, enrich: true, limit, index: field || undefined });
   const items = {};
   res.forEach((block) => {
     block.result.forEach((r) => {
@@ -160,6 +186,57 @@ function searchBasic(query, limit = 400, field = null) {
     });
   });
   return Object.keys(items).map((x) => parseInt(x, 10));
+}
+
+function pruneTextCache() {
+  while (textCache.size > TEXT_CACHE_LIMIT) {
+    const firstKey = textCache.keys().next().value;
+    if (firstKey === undefined) break;
+    textCache.delete(firstKey);
+  }
+}
+
+async function getTextById(id) {
+  const key = String(id);
+  if (textCache.has(key)) return textCache.get(key);
+  if (!dbInstance) throw new Error("DB not loaded");
+
+  const stmt = dbInstance.prepare("SELECT text_compressed FROM docs WHERE id = ?");
+  stmt.bind([id]);
+  let text = "";
+  if (stmt.step()) {
+    const row = stmt.getAsObject();
+    const compressed = row.text_compressed;
+    if (compressed) {
+      text = new TextDecoder().decode(pako.inflate(new Uint8Array(compressed)));
+    }
+  }
+  stmt.free();
+  textCache.set(key, text);
+  pruneTextCache();
+  return text;
+}
+
+async function buildFullIndex(db, decoder, meta) {
+  indexFull = new FlexSearch.Document(INDEX_FULL_CONFIG);
+  const stmt = db.prepare("SELECT id, text_compressed FROM docs ORDER BY id");
+  let count = 0;
+  while (stmt.step()) {
+    const row = stmt.getAsObject();
+    const text = decoder.decode(pako.inflate(new Uint8Array(row.text_compressed)));
+    const docMeta = meta[row.id - 1];
+    if (docMeta) {
+      indexFull.add({ ...docMeta, text });
+    }
+    count += 1;
+    // Yield periodically to keep the worker responsive
+    if (count % 500 === 0) {
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    }
+  }
+  stmt.free();
+  activeIndex = indexFull;
+  self.postMessage({ type: "full-index-ready", requestId: null });
 }
 
 self.onmessage = (event) => {
@@ -194,8 +271,9 @@ self.onmessage = (event) => {
     loadDatabase()
       .then(() => {
         const id = payload?.id;
-        const text = texts.get(id) || "";
-        self.postMessage({ type: "text", requestId, id, text });
+        return getTextById(id).then((text) => {
+          self.postMessage({ type: "text", requestId, id, text });
+        });
       })
       .catch((err) => {
         self.postMessage({ type: "error", requestId, error: String(err) });

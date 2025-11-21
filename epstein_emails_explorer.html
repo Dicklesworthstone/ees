@@ -257,6 +257,247 @@
         -webkit-box-orient: vertical;
         overflow: hidden;
       }
+
+      /* ==================== Mobile Optimizations ==================== */
+      @media (max-width: 768px) {
+        /* Reduce padding on mobile for more screen real estate */
+        body {
+          font-size: 14px;
+        }
+
+        /* Header optimizations */
+        header {
+          padding-left: 1rem !important;
+          padding-right: 1rem !important;
+          padding-top: 1rem !important;
+          padding-bottom: 1rem !important;
+        }
+
+        /* Main content spacing */
+        main {
+          padding-left: 1rem !important;
+          padding-right: 1rem !important;
+          padding-bottom: 1rem !important;
+        }
+
+        /* Stack layout vertically on mobile */
+        main {
+          flex-direction: column !important;
+        }
+
+        /* Make aside full-width on mobile */
+        aside {
+          width: 100% !important;
+          max-height: 60vh;
+          margin-bottom: 1rem;
+        }
+
+        /* Detail panel adjustments */
+        section {
+          margin-left: 0 !important;
+          width: 100%;
+        }
+
+        /* Increase touch targets for mobile */
+        button {
+          min-height: 44px;
+        }
+
+        /* Mode toggle buttons - larger for easier tapping */
+        #mode-docs, #mode-people {
+          padding-left: 1.25rem !important;
+          padding-right: 1.25rem !important;
+          padding-top: 0.625rem !important;
+          padding-bottom: 0.625rem !important;
+        }
+
+        /* Search input - larger and more comfortable */
+        #search-query {
+          font-size: 16px !important; /* Prevents iOS zoom */
+          padding-top: 0.875rem !important;
+          padding-bottom: 0.875rem !important;
+        }
+
+        /* Filter inputs */
+        #filename-filter,
+        #date-from,
+        #date-to,
+        #people-search {
+          font-size: 16px !important; /* Prevents iOS zoom */
+        }
+
+        /* Result cards - better spacing */
+        .card-hover {
+          margin-bottom: 0.75rem;
+        }
+
+        /* Stats cards - stack on very small screens */
+        @media (max-width: 640px) {
+          .md\\:grid-cols-3 {
+            grid-template-columns: 1fr !important;
+          }
+        }
+
+        /* Reduce animation intensity on mobile for performance */
+        .fade-in {
+          animation-duration: 0.2s !important;
+        }
+
+        .card-hover:hover {
+          transform: translateY(-1px) scale(1.005);
+        }
+
+        /* Header title - adjust size */
+        h1 {
+          font-size: 1.5rem !important;
+        }
+
+        /* Detail view title */
+        #detail-title {
+          font-size: 1.5rem !important;
+        }
+
+        /* Optimize glass effect on mobile (less blur for performance) */
+        .glass {
+          backdrop-filter: blur(10px) saturate(150%);
+        }
+
+        /* Reduce shadow intensity on mobile */
+        .glass {
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4),
+                      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        /* Pills - easier to tap */
+        .pill {
+          padding: 0.5rem 1rem;
+        }
+
+        /* Timeline - smaller on mobile */
+        #timeline {
+          height: 3rem !important;
+        }
+
+        /* Participant buttons - full width for easier tapping */
+        #detail-participants button {
+          width: 100%;
+          justify-content: center;
+          margin-bottom: 0.5rem;
+        }
+
+        /* Chunk navigation - stack vertically */
+        #detail-chunk-nav > div {
+          flex-direction: column !important;
+          align-items: flex-start !important;
+          gap: 1rem;
+        }
+
+        #detail-chunk-nav button {
+          width: 100%;
+        }
+
+        /* Results list - optimize height */
+        #results-list {
+          max-height: 50vh;
+        }
+
+        /* People list - optimize height */
+        #people-list {
+          max-height: 45vh;
+        }
+
+        /* Reduce border radius on mobile for cleaner look */
+        .rounded-2xl {
+          border-radius: 1rem !important;
+        }
+
+        .rounded-xl {
+          border-radius: 0.75rem !important;
+        }
+
+        /* Loading overlay adjustments */
+        #loading-overlay {
+          padding: 1rem;
+        }
+      }
+
+      /* Extra small devices (phones in portrait) */
+      @media (max-width: 480px) {
+        /* Further reduce padding */
+        .glass {
+          padding: 0.75rem !important;
+        }
+
+        /* Header compact mode */
+        header .glass {
+          padding: 1rem !important;
+        }
+
+        /* Stack header items */
+        header .glass > div {
+          flex-direction: column !important;
+          align-items: flex-start !important;
+        }
+
+        /* Hide helper pills to save space */
+        header .pill {
+          font-size: 0.65rem !important;
+          padding: 0.375rem 0.75rem !important;
+        }
+
+        /* Compact stats cards */
+        .glass.group {
+          padding: 0.75rem !important;
+        }
+
+        /* Results count badge */
+        #results-count {
+          font-size: 0.65rem !important;
+          padding: 0.375rem 0.75rem !important;
+        }
+
+        /* Smaller logo */
+        .gradient-bar {
+          width: 2.5rem !important;
+          height: 2.5rem !important;
+          font-size: 0.875rem !important;
+        }
+      }
+
+      /* Landscape phone optimization */
+      @media (max-width: 896px) and (orientation: landscape) {
+        aside {
+          max-height: 70vh;
+        }
+
+        #results-list {
+          max-height: 55vh;
+        }
+      }
+
+      /* Touch device optimizations */
+      @media (hover: none) and (pointer: coarse) {
+        /* Remove hover effects on touch devices */
+        .card-hover:hover {
+          transform: none;
+        }
+
+        /* But keep active/tap feedback */
+        .card-hover:active {
+          transform: scale(0.98);
+          opacity: 0.9;
+        }
+
+        button:active {
+          opacity: 0.8;
+        }
+
+        /* Larger tap targets */
+        button, a, input, label {
+          min-height: 44px;
+          min-width: 44px;
+        }
+      }
     </style>
   </head>
   <body class="text-slate-100">
@@ -295,21 +536,21 @@
           </div>
 
           <div class="mt-5 grid gap-4 md:grid-cols-3">
-            <div class="glass rounded-xl px-5 py-4 flex items-center gap-4 card-hover group">
+            <div class="glass rounded-xl px-5 py-4 flex items-center gap-4 group">
               <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-400/25 to-emerald-500/15 text-emerald-300 flex items-center justify-center font-bold text-xl shadow-lg group-hover:shadow-emerald-500/20 transition-shadow">Σ</div>
               <div class="flex-1 min-w-0">
                 <p class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Total Documents</p>
                 <p id="stats-doc-count" class="text-2xl font-bold text-slate-100 tabular-nums">—</p>
               </div>
             </div>
-            <div class="glass rounded-xl px-5 py-4 flex items-center gap-4 card-hover group">
+            <div class="glass rounded-xl px-5 py-4 flex items-center gap-4 group">
               <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-sky-400/25 to-sky-500/15 text-sky-300 flex items-center justify-center font-bold text-xl shadow-lg group-hover:shadow-sky-500/20 transition-shadow">👥</div>
               <div class="flex-1 min-w-0">
                 <p class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Participants</p>
                 <p id="stats-people-count" class="text-2xl font-bold text-slate-100 tabular-nums">—</p>
               </div>
             </div>
-            <div class="glass rounded-xl px-5 py-4 flex items-center gap-4 card-hover group">
+            <div class="glass rounded-xl px-5 py-4 flex items-center gap-4 group">
               <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-400/25 to-indigo-500/15 text-indigo-300 flex items-center justify-center font-bold text-xl shadow-lg group-hover:shadow-indigo-500/20 transition-shadow">⏳</div>
               <div class="flex-1 min-w-0">
                 <p class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Date Range</p>
@@ -349,6 +590,12 @@
                 class="text-xs text-slate-400 font-medium whitespace-nowrap px-3 py-1.5 bg-slate-900/50 rounded-full border border-slate-800"
               >
                 Loading…
+              </span>
+              <span
+                id="index-state"
+                class="text-[0.7rem] text-slate-300 whitespace-nowrap px-2 py-1 rounded-full border border-slate-800 bg-slate-900/70"
+              >
+                lite index
               </span>
             </div>
 
@@ -582,6 +829,7 @@
           currentResults: [],
           selectedDocId: null,
           mode: "docs",
+          indexState: "lite",
         };
 
         const elements = {};
@@ -592,6 +840,7 @@
           elements.queryInput = document.getElementById("search-query");
           elements.resultsList = document.getElementById("results-list");
           elements.resultsCount = document.getElementById("results-count");
+          elements.indexState = document.getElementById("index-state");
           elements.kindsContainer = document.getElementById("kinds-filter");
           elements.filenameInput = document.getElementById("filename-filter");
           elements.dateFromInput = document.getElementById("date-from");
@@ -649,6 +898,17 @@
             elements.statsDateRange.textContent = dateRange;
         }
 
+        function updateIndexBadge() {
+          if (!elements.indexState) return;
+          if (state.indexState === "full") {
+            elements.indexState.textContent = "full index";
+            elements.indexState.classList.add("text-emerald-300");
+          } else {
+            elements.indexState.textContent = "lite index";
+            elements.indexState.classList.remove("text-emerald-300");
+          }
+        }
+
         function setupWorker() {
           if (state.searchWorker) return;
           const worker = new Worker("search-worker.js");
@@ -656,6 +916,14 @@
 
           worker.onmessage = (event) => {
             const { type, requestId, ids, error, text, data } = event.data || {};
+            if (type === "full-index-ready") {
+              state.indexState = "full";
+              updateIndexBadge();
+              // refresh search to include body tokens
+              scheduleSearch(0);
+              return;
+            }
+
             if (!requestId) return;
             const entry = state.pendingWorkerRequests.get(requestId);
             if (!entry) return;
@@ -1176,7 +1444,17 @@
             if (doc.date_key) metaParts.push(`📅 ${doc.date_key}`);
             if (doc.from) metaParts.push(`👤 ${doc.from}`);
             if (doc.filename) metaParts.push(`📄 ${doc.filename}`);
-            meta.innerHTML = metaParts.join('<span class="text-slate-600">•</span>');
+            metaParts.forEach((part, idx) => {
+              const span = document.createElement("span");
+              span.textContent = part;
+              meta.appendChild(span);
+              if (idx < metaParts.length - 1) {
+                const separator = document.createElement("span");
+                separator.className = "text-slate-600";
+                separator.textContent = "•";
+                meta.appendChild(separator);
+              }
+            });
 
             const preview = document.createElement("div");
             preview.className =
@@ -1313,12 +1591,18 @@
             const line2 = document.createElement("div");
             line2.className = "text-[0.7rem] text-slate-400 flex items-center gap-2";
             const cos = (person.top_co || []).slice(0, 3).map((c) => c.address);
-            line2.innerHTML = `
-              <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md font-semibold">
-                📧 ${person.message_count.toLocaleString()}
-              </span>
-              ${cos.length ? `<span class="text-slate-500 truncate text-[0.65rem]">+ ${cos.join(", ")}</span>` : ""}
-            `;
+
+            const badge = document.createElement("span");
+            badge.className = "inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md font-semibold";
+            badge.textContent = `📧 ${person.message_count.toLocaleString()}`;
+            line2.appendChild(badge);
+
+            if (cos.length) {
+              const coSpan = document.createElement("span");
+              coSpan.className = "text-slate-500 truncate text-[0.65rem]";
+              coSpan.textContent = `+ ${cos.join(", ")}`;
+              line2.appendChild(coSpan);
+            }
 
             li.appendChild(line1);
             if (person.display_name) li.appendChild(email);
@@ -1438,10 +1722,26 @@
               typeof entry.score === "number"
                 ? Math.round(entry.score * 100)
                 : null;
-            const parts = [];
-            if (neighDoc.date_key) parts.push(`📅 ${neighDoc.date_key}`);
-            if (pct != null) parts.push(`<span class="px-1.5 py-0.5 bg-emerald-500/15 text-emerald-400 rounded font-semibold">${pct}% match</span>`);
-            meta.innerHTML = parts.join('<span class="text-slate-600">•</span>');
+
+            if (neighDoc.date_key) {
+              const dateSpan = document.createElement("span");
+              dateSpan.textContent = `📅 ${neighDoc.date_key}`;
+              meta.appendChild(dateSpan);
+            }
+
+            if (neighDoc.date_key && pct != null) {
+              const separator = document.createElement("span");
+              separator.className = "text-slate-600";
+              separator.textContent = "•";
+              meta.appendChild(separator);
+            }
+
+            if (pct != null) {
+              const pctBadge = document.createElement("span");
+              pctBadge.className = "px-1.5 py-0.5 bg-emerald-500/15 text-emerald-400 rounded font-semibold";
+              pctBadge.textContent = `${pct}% match`;
+              meta.appendChild(pctBadge);
+            }
             btn.appendChild(title);
             btn.appendChild(meta);
             btn.addEventListener("click", () => selectDoc(neighDoc.id));
@@ -1478,11 +1778,28 @@
 
           const threadInfo = document.createElement("span");
           threadInfo.className = "text-[0.7rem] font-semibold text-slate-300";
-          threadInfo.innerHTML = `
-            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/60 rounded-lg border border-slate-700/50">
-              <span>💬</span> Thread ${tid} <span class="text-slate-500">•</span> ${threadDocs.length} messages
-            </span>
-          `;
+
+          const badge = document.createElement("span");
+          badge.className = "inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/60 rounded-lg border border-slate-700/50";
+
+          const icon = document.createElement("span");
+          icon.textContent = "💬";
+          badge.appendChild(icon);
+
+          const text = document.createElement("span");
+          text.textContent = ` Thread ${tid} `;
+          badge.appendChild(text);
+
+          const separator = document.createElement("span");
+          separator.className = "text-slate-500";
+          separator.textContent = "•";
+          badge.appendChild(separator);
+
+          const count = document.createElement("span");
+          count.textContent = ` ${threadDocs.length} messages`;
+          badge.appendChild(count);
+
+          threadInfo.appendChild(badge);
 
           const viewAllBtn = document.createElement("button");
           viewAllBtn.type = "button";
@@ -1841,6 +2158,7 @@
               state.docs.map((d) => [String(d.id), d])
             );
             state.allDocIds = state.docs.map((d) => d.id);
+            state.indexState = data && data.index_state ? data.index_state : "lite";
 
             const kindSet = new Set();
             state.docs.forEach((d) => {
@@ -1857,11 +2175,12 @@
 
             state.neighborsById = new Map();
 
-          buildThreadsIndex();
-          renderKindsFilter();
-          renderTimeline();
-          renderStats();
-          switchMode("docs");
+            buildThreadsIndex();
+            renderKindsFilter();
+            renderTimeline();
+            renderStats();
+            updateIndexBadge();
+            switchMode("docs");
 
             if (state.timeline.length) {
               const dates = state.timeline.map((b) => b.date).sort();
