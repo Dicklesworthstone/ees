@@ -163,7 +163,27 @@ def normalize_body(text):
             blanks = 0
         cleaned_lines.append(line)
 
-    cleaned = "\n".join(cleaned_lines)
+    # Hard-wrap very long lines to improve readability in viewer
+    wrapped_lines = []
+    for line in cleaned_lines:
+        if len(line) > 160:
+            words = line.split()
+            current = []
+            clen = 0
+            for w in words:
+                if clen + len(w) + (1 if current else 0) > 100:
+                    wrapped_lines.append(" ".join(current))
+                    current = [w]
+                    clen = len(w)
+                else:
+                    current.append(w)
+                    clen += len(w) + (1 if current else 0)
+            if current:
+                wrapped_lines.append(" ".join(current))
+        else:
+            wrapped_lines.append(line)
+
+    cleaned = "\n".join(wrapped_lines)
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
     return cleaned.strip()
 
