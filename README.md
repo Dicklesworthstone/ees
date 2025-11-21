@@ -90,39 +90,13 @@ graph TB
 | **Worker** | Web Worker API | Background processing to keep UI responsive |
 | **UI Framework** | Vanilla JS | Zero-dependency, lightweight interface |
 
-- **Hot/cold split**: `meta.sqlite` (small, fast) + `text.pack` (compressed brotli blobs by offset) keep first render light.
+- **Hot/cold split**: `meta.sqlite` (small, fast) + `text.pack` (brotli-compressed bodies by offset) keep first render light.
 - **Lite-first indexing**: The worker instantly builds a lite index (subject/from/to/preview/domains) so search is usable immediately; a full-text index builds silently in the background and swaps in when ready.
 - **On-demand text**: Body text stays in `text.pack`; the worker inflates only what you open, with an LRU cache for repeat reads.
 - **All in the worker**: `search-worker.js` runs SQLite via sql.js, pako/fflate, and FlexSearch — zero server calls, zero telemetry.
 - **Fielded search DSL**: `subject:`, `from:`, `to:`, `body:`, boolean `AND/OR/NOT`, and date ranges like `date:[2001-01-01 TO 2005-12-31]` — precision sleuthing by default.
 - **People & threads**: Reconstructed threads, co-participant stats, domains, and quick “view whole thread” actions right in the UI.
 - **Timeline at a glance**: Mini histogram to timebox your hunts without leaving the pane.
-
-<details>
-<summary><b>🔄 Search Workflow</b></summary>
-
-```mermaid
-sequenceDiagram
-    participant U as User
-    participant UI as UI Layer
-    participant W as Web Worker
-    participant FS as FlexSearch
-    participant DB as SQLite DB
-    
-    U->>UI: Enter search query
-    UI->>W: Send query string
-    W->>FS: Execute fielded search
-    FS-->>W: Return matching IDs
-    W->>DB: Fetch metadata for IDs
-    DB-->>W: Return email chunks
-    W->>W: Process & format results
-    W-->>UI: Stream results
-    UI->>U: Display results with stats
-    
-    Note over U,DB: All processing happens<br/>client-side, zero backend
-```
-
-</details>
 
 ## 🚀 Using it
 
@@ -184,23 +158,25 @@ graph TD
 ### Commands
 
 ```bash
-# Rebuild the SQLite database bundle
+# Rebuild the meta + text pack bundle
 uv run build_epstein_index.py
 
-# Deploy to GitHub Pages (ships index.html, worker, vendor, sqlite)
+# Deploy to GitHub Pages (ships index.html, worker, vendor, meta.sqlite, text.pack)
 ./deploy_gh_pages.sh
 ```
 
-### Project Structure
+### Project Structure (essentials)
 
 ```
 ees/
 ├── data/
-│   └── epstein.sqlite          # Main database (~69 MB)
-├── epstein_emails_explorer.html # Main UI
-├── search-worker.js             # Web Worker for search
-├── build_epstein_index.py       # Database builder
-└── deploy_gh_pages.sh           # Deployment script
+│   ├── meta.sqlite          # Hot meta: docs, people, threads, timeline
+│   └── text.pack            # Brotli-compressed bodies (offset-addressable)
+├── epstein_emails_explorer.html  # Main UI
+├── search-worker.js              # Web Worker for search/indexing
+├── build_epstein_index.py        # Builds meta.sqlite + text.pack
+├── deploy_gh_pages.sh            # Deploys static site to gh-pages
+└── vendor/                       # Vendored js/wasm (sql.js, pako, fflate, flexsearch)
 ```
 
 ## 🔒 Privacy & footprint
