@@ -81,6 +81,7 @@ def normalize_subject(subj):
     if not subj:
         return None
     s = subj.strip()
+    original = s
     # Remove all Re:/Fw:/Fwd: prefixes (handle multiple)
     while True:
         s_new = re.sub(r"^\\s*(re|fw|fwd)\\s*:\\s*", "", s, flags=re.IGNORECASE)
@@ -88,7 +89,7 @@ def normalize_subject(subj):
             break
         s = s_new
     if not s:
-        s = subj.strip()  # If everything was removed, keep original
+        s = original  # If everything was removed, keep original
     return s
 
 
