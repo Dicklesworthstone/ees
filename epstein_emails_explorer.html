@@ -844,6 +844,7 @@
       <main class="flex-1 flex overflow-hidden px-4 sm:px-6 lg:px-10 pb-6">
         <!-- Left pane: search / people -->
         <aside
+          id="sidebar-panel"
           class="w-full md:w-[420px] flex flex-col gap-3"
         >
           <div class="glass rounded-2xl p-5 border border-slate-800/80 shadow-2xl">
@@ -910,58 +911,61 @@
               </div>
 
               <div class="grid grid-cols-1 gap-4">
-                <div class="glass rounded-xl border border-slate-800/80 p-4 space-y-3.5 bg-slate-900/30">
-                  <div class="flex items-center justify-between">
+                <div class="glass rounded-xl border border-slate-800/80 p-4 bg-slate-900/30 transition-all duration-300">
+                  <div id="filters-header" class="flex items-center justify-between cursor-pointer select-none">
                     <span class="text-[0.7rem] uppercase tracking-wider text-slate-400 font-bold flex items-center gap-2">
                       <span class="text-base">⚡</span> Filters
+                      <span id="filters-chevron" class="text-xs text-slate-500 transition-transform duration-200">▼</span>
                     </span>
                     <button
                       id="clear-filters"
                       type="button"
-                      class="text-[0.7rem] text-emerald-400 hover:text-emerald-300 font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-all duration-200"
+                      class="text-[0.7rem] text-emerald-400 hover:text-emerald-300 font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-all duration-200 z-10"
                     >
                       Clear All
                     </button>
                   </div>
-                  <div class="space-y-1.5">
-                    <label class="text-[0.65rem] uppercase tracking-wider text-slate-400 font-semibold block">📄 Filename</label>
-                    <input
-                      id="filename-filter"
-                      type="text"
-                      placeholder="Filter by filename..."
-                      class="w-full text-xs rounded-lg bg-slate-900/80 border border-slate-700 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 placeholder:text-slate-500 transition-all shadow-inner"
-                    />
-                  </div>
-                  <div class="space-y-2">
-                    <label class="text-[0.65rem] uppercase tracking-wider text-slate-400 font-semibold block">📅 Date Range</label>
-                    <div class="flex items-center gap-2.5">
+                  <div id="filters-body" class="space-y-3.5 mt-3.5 overflow-hidden transition-all duration-300">
+                    <div class="space-y-1.5">
+                      <label class="text-[0.65rem] uppercase tracking-wider text-slate-400 font-semibold block">📄 Filename</label>
                       <input
-                        id="date-from"
-                        type="date"
-                        class="flex-1 text-[0.7rem] rounded-lg bg-slate-900/80 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 transition-all shadow-inner"
-                      />
-                      <span class="text-slate-500 font-bold">→</span>
-                      <input
-                        id="date-to"
-                        type="date"
-                        class="flex-1 text-[0.7rem] rounded-lg bg-slate-900/80 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 transition-all shadow-inner"
+                        id="filename-filter"
+                        type="text"
+                        placeholder="Filter by filename..."
+                        class="w-full text-xs rounded-lg bg-slate-900/80 border border-slate-700 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 placeholder:text-slate-500 transition-all shadow-inner"
                       />
                     </div>
-                  </div>
-                  <div class="space-y-2">
-                    <div class="flex items-center justify-between">
-                      <label class="text-[0.65rem] uppercase tracking-wider text-slate-400 font-semibold">🏷️ Document Types</label>
+                    <div class="space-y-2">
+                      <label class="text-[0.65rem] uppercase tracking-wider text-slate-400 font-semibold block">📅 Date Range</label>
+                      <div class="flex items-center gap-2.5">
+                        <input
+                          id="date-from"
+                          type="date"
+                          class="flex-1 text-[0.7rem] rounded-lg bg-slate-900/80 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 transition-all shadow-inner"
+                        />
+                        <span class="text-slate-500 font-bold">→</span>
+                        <input
+                          id="date-to"
+                          type="date"
+                          class="flex-1 text-[0.7rem] rounded-lg bg-slate-900/80 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 transition-all shadow-inner"
+                        />
+                      </div>
                     </div>
-                    <div
-                      id="kinds-filter"
-                      class="flex flex-wrap gap-1.5 text-[0.7rem]"
-                    ></div>
-                  </div>
-                  <div class="space-y-2">
-                    <div class="flex items-center justify-between">
-                      <label class="text-[0.65rem] uppercase tracking-wider text-slate-400 font-semibold">📊 Timeline Distribution</label>
+                    <div class="space-y-2">
+                      <div class="flex items-center justify-between">
+                        <label class="text-[0.65rem] uppercase tracking-wider text-slate-400 font-semibold">🏷️ Document Types</label>
+                      </div>
+                      <div
+                        id="kinds-filter"
+                        class="flex flex-wrap gap-1.5 text-[0.7rem]"
+                      ></div>
                     </div>
-                    <div id="timeline" class="h-16 flex items-end bg-slate-950/40 rounded-lg p-2 border border-slate-800/50"></div>
+                    <div class="space-y-2">
+                      <div class="flex items-center justify-between">
+                        <label class="text-[0.65rem] uppercase tracking-wider text-slate-400 font-semibold">📊 Timeline Distribution</label>
+                      </div>
+                      <div id="timeline" class="h-16 flex items-end bg-slate-950/40 rounded-lg p-2 border border-slate-800/50"></div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1015,7 +1019,10 @@
         </aside>
 
         <!-- Right pane: detail view -->
-        <section class="flex-1 flex flex-col overflow-hidden ml-4">
+        <section id="detail-panel" class="flex-1 flex flex-col overflow-hidden ml-0 md:ml-4 hidden md:flex">
+          <button id="mobile-back-btn" class="md:hidden mb-3 flex items-center gap-2 text-xs font-bold text-slate-400 hover:text-emerald-400 transition-colors self-start px-1 py-1">
+            <span>←</span> BACK TO RESULTS
+          </button>
           <div class="glass flex-1 overflow-y-auto px-6 py-6 rounded-2xl border border-slate-800/80 shadow-2xl">
             <div class="mx-auto max-w-3xl">
               <div class="flex items-start justify-between gap-4 mb-4">
@@ -1156,6 +1163,59 @@
           elements.statsDocCount = document.getElementById("stats-doc-count");
           elements.statsPeopleCount = document.getElementById("stats-people-count");
           elements.statsDateRange = document.getElementById("stats-date-range");
+          elements.sidebarPanel = document.getElementById("sidebar-panel");
+          elements.detailPanel = document.getElementById("detail-panel");
+          elements.mobileBackBtn = document.getElementById("mobile-back-btn");
+          elements.filtersHeader = document.getElementById("filters-header");
+          elements.filtersBody = document.getElementById("filters-body");
+          elements.filtersChevron = document.getElementById("filters-chevron");
+        }
+
+        function toggleFilters(forceState) {
+          const body = elements.filtersBody;
+          const chevron = elements.filtersChevron;
+          if (!body || !chevron) return;
+          
+          const isExpanded = !body.classList.contains("h-0") && !body.classList.contains("hidden");
+          const newState = forceState !== undefined ? forceState : !isExpanded;
+
+          if (newState) {
+            body.classList.remove("hidden", "h-0", "opacity-0", "mt-0");
+            body.classList.add("mt-3.5", "opacity-100");
+            chevron.style.transform = "rotate(0deg)";
+          } else {
+            body.classList.add("hidden", "h-0", "opacity-0", "mt-0");
+            body.classList.remove("mt-3.5", "opacity-100");
+            chevron.style.transform = "rotate(-90deg)";
+          }
+        }
+
+        function updateMobileLayout() {
+          // Only relevant on mobile
+          if (window.innerWidth >= 768) {
+            if (elements.sidebarPanel) elements.sidebarPanel.classList.remove("hidden");
+            if (elements.detailPanel) {
+               elements.detailPanel.classList.remove("hidden");
+               elements.detailPanel.classList.add("flex");
+            }
+            return;
+          }
+
+          if (state.selectedDocId) {
+            // Show Detail, Hide List
+            if (elements.sidebarPanel) elements.sidebarPanel.classList.add("hidden");
+            if (elements.detailPanel) {
+               elements.detailPanel.classList.remove("hidden");
+               elements.detailPanel.classList.add("flex");
+            }
+          } else {
+            // Show List, Hide Detail
+            if (elements.sidebarPanel) elements.sidebarPanel.classList.remove("hidden");
+            if (elements.detailPanel) {
+               elements.detailPanel.classList.add("hidden");
+               elements.detailPanel.classList.remove("flex");
+            }
+          }
         }
 
         function setLoading(show) {
@@ -1209,6 +1269,16 @@
               updateIndexBadge();
               // refresh search to include body tokens
               scheduleSearch(0);
+              return;
+            }
+
+            if (type === "full-index-error") {
+              console.error("Full index build failed:", error);
+              if (elements.indexHint) {
+                elements.indexHint.textContent = "Full-text indexing failed. Body search unavailable.";
+                elements.indexHint.style.color = "var(--error)";
+                elements.indexHint.classList.remove("hidden");
+              }
               return;
             }
 
@@ -1687,7 +1757,7 @@
             const da = a.doc.date_key || "";
             const db = b.doc.date_key || "";
             if (da !== db) return db.localeCompare(da);
-            return String(a.doc.id).localeCompare(String(b.doc.id));
+            return (a.doc.id || 0) - (b.doc.id || 0);
           });
 
           return rows;
@@ -1927,16 +1997,24 @@
           }
           for (const [tid, arr] of threads.entries()) {
             arr.sort((a, b) => {
+              // 1. Sort by Date
               const da = a.date_key || "";
               const db = b.date_key || "";
               if (da !== db) return da.localeCompare(db);
-              if (
-                typeof a.chunk_index === "number" &&
-                typeof b.chunk_index === "number"
-              ) {
-                return a.chunk_index - b.chunk_index;
-              }
-              return String(a.id).localeCompare(String(b.id));
+
+              // 2. Sort by Message ID (numeric from "m123")
+              // This ensures chunks of the same message stay together
+              const ma = parseInt((a.message_id || "m0").substring(1), 10) || 0;
+              const mb = parseInt((b.message_id || "m0").substring(1), 10) || 0;
+              if (ma !== mb) return ma - mb;
+
+              // 3. Sort by Chunk Index within the message
+              const ca = a.chunk_index || 0;
+              const cb = b.chunk_index || 0;
+              if (ca !== cb) return ca - cb;
+
+              // 4. Fallback to Doc ID (numeric)
+              return (a.id || 0) - (b.id || 0);
             });
           }
           state.threadsById = threads;
@@ -2279,7 +2357,11 @@
           elements.detailBody.textContent = "Loading full text…";
           loadDocText(doc.id).then((text) => {
             if (String(state.selectedDocId) !== idStr) return;
-            elements.detailBody.textContent = text || "(No body text)";
+            if (text === "" && !state.docsById.get(idStr)) return; // Document might be missing
+            elements.detailBody.textContent = text || "(No body text available)";
+          }).catch(() => {
+            if (String(state.selectedDocId) !== idStr) return;
+             elements.detailBody.innerHTML = `<span class="text-red-400">Failed to load document text. Please try again.</span>`;
           });
         }
 
@@ -2287,6 +2369,17 @@
           state.selectedDocId = id;
           renderResultsList();
           renderSelectedDoc();
+          persistStateToUrl();
+          updateMobileLayout();
+          // Scroll top on mobile when switching to detail
+          if (window.innerWidth < 768 && elements.detailPanel) {
+             window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        }
+
+        function handleMobileBack() {
+          state.selectedDocId = null;
+          updateMobileLayout();
           persistStateToUrl();
         }
 
@@ -2458,11 +2551,28 @@
           elements.peopleSearchInput.addEventListener("input", () =>
             renderPeoplePanel()
           );
+          if (elements.mobileBackBtn) {
+            elements.mobileBackBtn.addEventListener("click", handleMobileBack);
+          }
+          if (elements.filtersHeader) {
+             elements.filtersHeader.addEventListener("click", (e) => {
+               if (e.target.closest("button")) return; // Ignore clear button clicks
+               toggleFilters();
+             });
+          }
+          window.addEventListener("resize", updateMobileLayout);
         }
 
         async function loadAllData() {
           try {
             const data = await ensureWorkerReady();
+
+            // Initialize filters state (collapsed on mobile by default)
+            if (window.innerWidth < 768) {
+               toggleFilters(false);
+            } else {
+               toggleFilters(true);
+            }
 
             state.docs = (data && data.docs) || [];
             state.docsById = new Map(
@@ -2503,6 +2613,7 @@
 
             restoreStateFromUrl();
             scheduleSearch(0);
+            updateMobileLayout();
           } catch (err) {
             console.error("Failed to load data", err);
             elements.resultsCount.textContent =
