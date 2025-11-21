@@ -617,6 +617,9 @@
                   />
                   <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-500/5 to-blue-500/5 pointer-events-none opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
                 </div>
+                <p id="index-hint" class="text-[0.7rem] text-amber-300/80 hidden">
+                  Full-text indexing in progress. Body-only searches may be limited for a moment.
+                </p>
                 <div class="flex flex-wrap gap-1.5 text-[0.7rem]">
                   <span class="pill rounded-md px-2.5 py-1 font-mono text-emerald-300">subject:</span>
                   <span class="pill rounded-md px-2.5 py-1 font-mono text-sky-300">from:</span>
@@ -841,6 +844,7 @@
           elements.resultsList = document.getElementById("results-list");
           elements.resultsCount = document.getElementById("results-count");
           elements.indexState = document.getElementById("index-state");
+          elements.indexHint = document.getElementById("index-hint");
           elements.kindsContainer = document.getElementById("kinds-filter");
           elements.filenameInput = document.getElementById("filename-filter");
           elements.dateFromInput = document.getElementById("date-from");
@@ -903,9 +907,11 @@
           if (state.indexState === "full") {
             elements.indexState.textContent = "full index";
             elements.indexState.classList.add("text-emerald-300");
+            if (elements.indexHint) elements.indexHint.classList.add("hidden");
           } else {
             elements.indexState.textContent = "lite index";
             elements.indexState.classList.remove("text-emerald-300");
+            if (elements.indexHint) elements.indexHint.classList.remove("hidden");
           }
         }
 
@@ -986,7 +992,8 @@
             f === "content" ||
             f === "search_text"
           ) {
-            mappedField = "text";
+            // During lite index, fall back to all-fields so users don't see empty results
+            mappedField = state.indexState === "lite" ? null : "text";
           } else if (f === "all") {
             mappedField = null;
           }

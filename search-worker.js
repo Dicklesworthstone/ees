@@ -10,8 +10,10 @@ let activeIndex = null;
 let initPromise = null;
 let fullIndexPromise = null;
 let dbInstance = null;
+const metaById = new Map();
+// Simple LRU cache for decompressed texts
 const textCache = new Map();
-const TEXT_CACHE_LIMIT = 200; // LRU cap for decompressed texts
+const TEXT_CACHE_LIMIT = 200;
 
 const FLEXSEARCH_URL = "vendor/flexsearch.bundle.min.js";
 const PAKO_URL = "vendor/pako.min.js";
@@ -73,7 +75,6 @@ async function loadDatabase() {
     dbInstance = db;
 
     const meta = [];
-    const textMap = new Map();
     const decoder = new TextDecoder();
 
     const stmt = db.prepare(`
@@ -112,6 +113,7 @@ async function loadDatabase() {
       };
 
       meta.push(docMeta);
+      metaById.set(docMeta.id, docMeta);
       indexLite.add({ ...docMeta, preview: docMeta.preview || "" });
     }
     stmt.free();
@@ -198,7 +200,13 @@ function pruneTextCache() {
 
 async function getTextById(id) {
   const key = String(id);
-  if (textCache.has(key)) return textCache.get(key);
+  if (textCache.has(key)) {
+    const val = textCache.get(key);
+    // refresh recency
+    textCache.delete(key);
+    textCache.set(key, val);
+    return val;
+  }
   if (!dbInstance) throw new Error("DB not loaded");
 
   const stmt = dbInstance.prepare("SELECT text_compressed FROM docs WHERE id = ?");
@@ -224,13 +232,13 @@ async function buildFullIndex(db, decoder, meta) {
   while (stmt.step()) {
     const row = stmt.getAsObject();
     const text = decoder.decode(pako.inflate(new Uint8Array(row.text_compressed)));
-    const docMeta = meta[row.id - 1];
+    const docMeta = metaById.get(row.id);
     if (docMeta) {
       indexFull.add({ ...docMeta, text });
     }
     count += 1;
     // Yield periodically to keep the worker responsive
-    if (count % 500 === 0) {
+    if (count % 200 === 0) {
       await new Promise((resolve) => setTimeout(resolve, 0));
     }
   }
