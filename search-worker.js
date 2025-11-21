@@ -17,10 +17,6 @@ const metaById = new Map();
 const textCache = new Map();
 const TEXT_CACHE_LIMIT = 200;
 
-// Shim CommonJS globals for UMD bundles in worker scope
-var module = { exports: {} };
-var exports = module.exports;
-
 const FLEXSEARCH_URL = "vendor/flexsearch.bundle.min.js";
 const PAKO_URL = "vendor/pako.min.js";
 const FFLATE_URL = "vendor/fflate.min.js";
@@ -62,62 +58,65 @@ const INDEX_FULL_CONFIG = {
 };
 
 async function loadDeps() {
-  // 1. Load FlexSearch FIRST in a clean environment.
-  // FlexSearch detects 'module' and behaves like a Node module if present,
-  // often failing to register 'self.FlexSearch'. By loading it first without
-  // 'module' defined, we force it to behave like a browser script.
+  // Sequential loader for UMD libraries to prevent module.exports collisions.
+  // We explicitly define and reset module.exports for each library.
+
+  // 1. Load FlexSearch
+  self.module = { exports: {} };
+  self.exports = self.module.exports;
   try {
     importScripts(FLEXSEARCH_URL);
+    // Capture FlexSearch
+    if (self.module.exports && (self.module.exports.Document || self.module.exports.Index || self.module.exports.Worker)) {
+      self.FlexSearch = self.module.exports;
+    }
   } catch (err) {
     throw new Error(`Failed to load FlexSearch: ${err.message}`);
   }
 
-  if (typeof FlexSearch === "undefined") {
-     // Fallback: check if it somehow attached elsewhere, but it should be global now.
-     throw new Error("FlexSearch failed to load (undefined in global scope)");
-  }
-
-  // 2. Initialize module/exports for Pako
-  // Pako's UMD build prefers module.exports if available.
+  // 2. Load Pako
   self.module = { exports: {} };
   self.exports = self.module.exports;
-
   try {
     importScripts(PAKO_URL);
-    // Capture Pako from module.exports
+    // Capture Pako
     if (self.module.exports && self.module.exports.inflate) {
       self.pako = self.module.exports;
-    } else if (!self.pako) {
-        // Sometimes it might still attach to global if module.exports is weird
-        // but usually module.exports is authoritative for UMD.
     }
   } catch (err) {
     throw new Error(`Failed to load pako: ${err.message}`);
   }
 
-  // 3. Reset module/exports for fflate
+  // 3. Load fflate (for legacy Brotli fallback, though we use zlib now)
   self.module = { exports: {} };
   self.exports = self.module.exports;
-
   try {
     importScripts(FFLATE_URL);
-    // fflate exports are a flat object of functions
+    // Capture fflate
     if (self.module.exports && Object.keys(self.module.exports).length > 0) {
       self.fflate = self.module.exports;
     }
   } catch (err) {
-    throw new Error(`Failed to load fflate: ${err.message}`);
+    // fflate is optional if pako works
+    console.warn(`Failed to load fflate: ${err.message}`);
   }
 
-  // Cleanup polyfills so they don't mess with anything else
+  // 4. Load SQL.js (Global script)
+  try {
+    importScripts(SQL_JS_URL);
+  } catch (err) {
+    throw new Error(`Failed to load sql.js: ${err.message}`);
+  }
+
+  // Cleanup globals to prevent side effects
   delete self.module;
   delete self.exports;
 
-  // Final verification
+  // Validation
   if (typeof FlexSearch === "undefined") throw new Error("FlexSearch not found after load");
   if (typeof pako === "undefined") throw new Error("pako not found after load");
-  
   if (typeof initSqlJs !== "function") throw new Error("sql.js failed to load");
+
   const SQL = await initSqlJs({ locateFile: (file) => `vendor/${file}` });
   return SQL;
 }
@@ -151,8 +150,6 @@ async function loadDatabase() {
       })
       .catch(err => {
         console.error("Failed to load text pack:", err);
-        // We don't throw here to avoid breaking the lite UI, 
-        // but getTextById will fail if called
       });
 
     const db = new SQL.Database(new Uint8Array(metaBuf));
@@ -308,8 +305,6 @@ async function getTextById(id) {
     const compression = row.compression || "br";
     if (offset !== null && offset !== undefined && length !== null && length !== undefined) {
       const slice = new Uint8Array(textPack, offset, length);
-      // Handle zlib (defaulting to pako for robustness)
-      // We could use fflate.unzlibSync(slice) for speed if available, but pako is safe.
       try {
           text = new TextDecoder().decode(pako.inflate(slice));
       } catch (e) {
