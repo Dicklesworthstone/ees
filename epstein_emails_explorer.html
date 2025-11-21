@@ -918,6 +918,8 @@
             const { type, requestId, ids, error, text, data } = event.data || {};
             if (type === "full-index-ready") {
               state.indexState = "full";
+              state.termCache.clear();
+              searchGeneration += 1; // invalidate in-flight generations
               updateIndexBadge();
               // refresh search to include body tokens
               scheduleSearch(0);
