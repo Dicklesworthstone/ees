@@ -68,12 +68,18 @@ async function loadDeps() {
     throw new Error(`Failed to load base libraries: ${err.message}`);
   }
 
-  // Now polyfill exports AND module for fflate
+  // Polyfill module/exports with synchronization for fflate UMD
   if (typeof exports === "undefined") {
     self.exports = {};
   }
   if (typeof module === "undefined") {
-    self.module = { exports: self.exports };
+    // Create module with getter/setter to keep exports synchronized
+    self.module = {};
+    Object.defineProperty(self.module, 'exports', {
+      get() { return self.exports; },
+      set(v) { self.exports = v; },
+      configurable: true
+    });
   }
 
   try {
