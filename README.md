@@ -53,8 +53,8 @@ graph TB
     C -->|Fetches| D[meta.sqlite<br/>hot meta]
     C -->|Fetches| J[text.pack<br/>compressed bodies]
     C -->|Loads| E[sql.js<br/>SQLite WASM]
-    C -->|Loads| F[pako (zlib)<br/>Decompression]
-    C -->|Builds| G[FlexSearch Index (lite→full)]
+    C -->|Loads| F[pako zlib<br/>Decompression]
+    C -->|Builds| G[FlexSearch Index<br/>lite to full]
     D -->|Query| E
     J -->|Decompress on demand| F
     E -->|Results| G
@@ -103,12 +103,12 @@ graph TB
 ### Quick Start
 
 ```mermaid
-graph LR
-    A[Open App] -->|Load| B[Wait for Index]
-    B -->|Ready| C[Enter Query]
-    C -->|Search| D[View Results]
-    D -->|Click| E[Read Email]
-    E -->|Navigate| F[Thread View]
+flowchart LR
+    A[Open App] --> B[Wait for Index]
+    B --> C[Enter Query]
+    C --> D[View Results]
+    D --> E[Read Email]
+    E --> F[Thread View]
     
     style A fill:#e3f2fd
     style B fill:#fff3e0
@@ -135,238 +135,17 @@ graph LR
 | **Date Range** | `date:[2001-01-01 TO 2005-12-31]` | Filter by date range |
 | **Body Search** | `body:confidential` | Search email content |
 
-## 📱 Mobile Experience
-
-EES is fully optimized for mobile devices with a native app-like experience, for high-value elite target sexcapade IMAP snooping in the car, on your boat, on the golf course, or wherever your travels take you. The mobile interface adapts seamlessly to phones and tablets, providing touch-optimized controls, gesture navigation, and responsive layouts that make exploring emails effortless on the go.
-
-### Master-Detail Navigation
-
-**The Problem**: Desktop layouts with side-by-side panels don't work on small screens. Users need focused views that maximize screen real estate.
-
-**The Solution**: Master-detail pattern with smooth slide animations.
-
-#### How It Works
-
-```mermaid
-graph LR
-    A[Search Results<br/>Master View] -->|Tap Result| B[Detail View<br/>Full Screen]
-    B -->|Back Button| A
-    B -->|Swipe Right| A
-    
-    style A fill:#e3f2fd
-    style B fill:#f3e5f5
-```
-
-- **Master View**: Shows search results list, filters, and stats — optimized for browsing
-- **Detail View**: Full-screen email content with sticky header and navigation controls
-- **Smooth Transitions**: Slide animations (300ms cubic-bezier) provide visual continuity
-- **State Management**: URL state persists, so back/forward browser buttons work correctly
-
-**Architectural Benefits**:
-- **100% screen utilization**: No wasted space on small screens
-- **Focused reading**: Detail view eliminates distractions
-- **Native feel**: Slide animations match iOS/Android app patterns
-- **Accessibility**: Back button always visible, clear navigation cues
-
-### Touch-Optimized Controls
-
-#### Minimum Touch Targets
-- **All interactive elements**: Minimum 44×44px (Apple HIG / Material Design standard)
-- **Buttons**: Larger padding on mobile (1.25rem horizontal, 0.625rem vertical)
-- **Filter inputs**: 16px font size prevents iOS zoom-on-focus
-- **Result cards**: Full-width tap targets with visual feedback
-
-#### Gesture Support
-
-**Swipe-to-Back Navigation**:
-- **Gesture**: Swipe right from left edge of detail view
-- **Threshold**: 100px swipe distance triggers navigation
-- **Visual feedback**: Swipe indicator appears during gesture
-- **Haptic feedback**: Vibration on successful swipe (if device supports)
-- **Edge detection**: Only activates when starting from left 50px
-
-**Implementation Details**:
-```javascript
-// Detects horizontal swipe from left edge
-if (touchStartX < 50 && deltaX > 30 && Math.abs(deltaY) < Math.abs(deltaX)) {
-  // Show swipe indicator
-  // On completion (>100px), navigate back
-}
-```
-
-**Why This Matters**:
-- **One-handed use**: Natural thumb gesture for going back
-- **Reduces taps**: No need to reach for back button
-- **Discoverable**: Visual indicator teaches users the gesture
-- **Performance**: Passive event listeners prevent scroll jank
-
-### Responsive Layout Breakpoints
-
-| Breakpoint | Width | Layout Changes |
-|------------|-------|----------------|
-| **Desktop** | ≥768px | Side-by-side panels, full desktop features |
-| **Tablet/Mobile** | <768px | Master-detail navigation, mobile optimizations |
-| **Small Phone** | <480px | Compact mode, reduced padding, stacked header |
-| **Landscape** | <896px (landscape) | Reduced vertical heights, optimized for horizontal space |
-
-### Mobile-Specific Features
-
-#### Sticky Header with Scroll Shadow
-- **Position**: Sticky at top of viewport
-- **Safe area support**: Respects iOS notch and Android status bar (`env(safe-area-inset-top)`)
-- **Scroll feedback**: Shadow appears when scrolled (visual depth cue)
-- **Detail view header**: Sticky back button + title bar for easy navigation
-
-#### Horizontal Scrolling Cards
-- **Stats cards**: Horizontal scroll with snap points for browsing stats
-- **Search hint pills**: Scrollable pill container with snap alignment
-- **Smooth scrolling**: `-webkit-overflow-scrolling: touch` for iOS momentum
-- **Hidden scrollbars**: Clean aesthetic, scrollable via touch
-
-#### Filter Badge System
-- **Active filter count**: Badge shows number of active filters
-- **Visual indicator**: Gradient badge with glow effect
-- **Empty state**: Badge hidden when no filters active
-- **Quick access**: Tap badge to expand/collapse filter panel
-
-#### Active Filter Chips
-- **Visual feedback**: Shows all active filters as removable chips
-- **One-tap removal**: Tap chip to remove that filter
-- **Color coding**: Different colors for different filter types
-- **Scrollable container**: Handles many filters gracefully
-
-#### Scroll Indicators
-- **Visual cues**: Subtle indicators show scrollable content
-- **Dynamic display**: Only appears when content overflows
-- **Touch-friendly**: Larger on mobile for visibility
-
-### Performance Optimizations
-
-#### Reduced Animation Intensity
-- **Simplified effects**: Less blur, fewer shadows on mobile
-- **Performance-first**: Prioritizes 60fps scrolling over visual effects
-- **Conditional rendering**: Heavy effects disabled on low-end devices
-
-#### Optimized Typography
-- **Readable sizes**: 14px base font, 1.6 line height
-- **No zoom on focus**: 16px inputs prevent iOS auto-zoom
-- **Word wrapping**: Aggressive wrapping prevents horizontal scroll
-- **Code blocks**: Break-all for long lines, prevents overflow
-
-#### Memory Management
-- **Lazy loading**: Detail content only renders when viewed
-- **Scroll position**: Preserved when navigating back
-- **State cleanup**: Unused DOM elements cleaned up
-
-### iOS & Android Specific
-
-#### iOS Optimizations
-- **Safe area insets**: Respects notch and home indicator
-- **Momentum scrolling**: Native-feel scroll physics
-- **Tap highlight removal**: `-webkit-tap-highlight-color: transparent`
-- **Font rendering**: `-webkit-font-smoothing: antialiased`
-
-#### Android Optimizations
-- **Material Design spacing**: Follows 8dp grid system
-- **Touch feedback**: Active states provide visual feedback
-- **Back button**: Browser back button works correctly
-- **Status bar**: Safe area insets for modern Android devices
-
-### Mobile Search Experience
-
-#### Optimized Input Fields
-- **Larger touch targets**: 16px font prevents zoom
-- **Full-width inputs**: Maximum screen utilization
-- **Clear visual hierarchy**: Labels, placeholders, and values distinct
-- **Keyboard optimization**: Appropriate input types trigger correct keyboards
-
-#### Search Results
-- **Card-based layout**: Each result is a full-width card
-- **Visual selection**: Selected card highlighted with gradient border
-- **Smooth scrolling**: Results list scrolls smoothly even with thousands of items
-- **Infinite scroll ready**: Architecture supports pagination if needed
-
-#### Filter Panel
-- **Collapsible by default**: Hidden on mobile to maximize space
-- **Sticky toggle**: Filter button always accessible
-- **Badge indicator**: Shows active filter count
-- **Smooth animations**: Expand/collapse with spring physics
-
-### Landscape Mode
-
-**Special Optimizations**:
-- **Reduced heights**: Stats and lists use 70vh max-height
-- **Horizontal space**: Better use of wide screens
-- **Dual-pane ready**: Could show master-detail side-by-side on tablets
-- **Orientation detection**: Layout adjusts automatically
-
-### Accessibility on Mobile
-
-#### Touch Accessibility
-- **Large targets**: All interactive elements meet WCAG 2.1 AA (44×44px minimum)
-- **Clear labels**: All buttons have descriptive text or icons
-- **Focus indicators**: Visible focus states for keyboard navigation
-- **Screen reader support**: Semantic HTML, ARIA labels where needed
-
-#### Visual Accessibility
-- **High contrast**: Text meets WCAG contrast ratios
-- **Readable fonts**: 14px minimum, scalable with system settings
-- **Color independence**: Information conveyed through multiple cues (not just color)
-- **Reduced motion**: Respects `prefers-reduced-motion` media query
-
-### Mobile Performance Metrics
-
-| Metric | Desktop | Mobile | Notes |
-|--------|---------|--------|-------|
-| **Initial Load** | ~1-2s | ~2-3s | Slightly slower due to mobile network |
-| **Search Latency** | <50ms | <50ms | Same performance (Web Worker) |
-| **Scroll FPS** | 60fps | 60fps | Optimized animations |
-| **Memory Usage** | ~60MB | ~50MB | Mobile browsers more aggressive GC |
-| **Touch Response** | N/A | <16ms | 60fps touch handling |
-
-### Mobile-Specific Code Architecture
-
-#### Responsive Detection
-```javascript
-function updateMobileLayout() {
-  const isMobile = window.innerWidth < 768;
-  // Apply mobile-specific classes and behaviors
-  // Slide animations, master-detail switching
-}
-```
-
-#### State Management
-- **URL state**: Mobile navigation updates URL for shareability
-- **Scroll preservation**: Scroll position saved when navigating
-- **Selection clearing**: Back button clears selection state
-- **Layout recalculation**: Window resize triggers layout update
-
-#### Event Handling
-- **Passive listeners**: Touch events use passive listeners for scroll performance
-- **Debounced resize**: Window resize debounced to prevent excessive recalculations
-- **Touch vs. mouse**: Conditional event handlers based on device capabilities
-
-### Future Mobile Enhancements
-
-**Planned Features**:
-- **Pull-to-refresh**: Refresh search results with pull gesture
-- **Share sheet integration**: Native iOS/Android share dialogs
-- **Offline support**: Service Worker caching for offline access
-- **App-like install**: PWA manifest for "Add to Home Screen"
-- **Dark mode**: System preference detection and theme switching
-- **Haptic patterns**: More sophisticated vibration feedback
-
 ## 📦 Local dev
 
 ### Development Workflow
 
 ```mermaid
-graph TD
-    A[Edit Code] -->|Build| B[build_epstein_index.py]
-    B -->|Generate| C[epstein.sqlite]
-    C -->|Deploy| D[deploy_gh_pages.sh]
-    D -->|Push| E[GitHub Pages]
-    E -->|Live| F[Production Site]
+flowchart TD
+    A[Edit Code] --> B[build_epstein_index.py]
+    B --> C[meta.sqlite + text.pack]
+    C --> D[deploy_gh_pages.sh]
+    D --> E[GitHub Pages]
+    E --> F[Production Site]
     
     style A fill:#e3f2fd
     style B fill:#fff3e0
@@ -414,20 +193,18 @@ ees/
 ### Data Flow
 
 ```mermaid
-graph LR
-    A[GitHub Pages] -->|Static Assets| B[Your Browser]
-    B -->|Loads| C[Web Worker]
-    C -->|Processes| D[Local Index]
-    D -->|Searches| E[Results]
+flowchart LR
+    A[GitHub Pages] --> B[Your Browser]
+    B --> C[Web Worker]
+    C --> D[Local Index]
+    D --> E[Results]
+    F[No External Servers] -.-> B
     
     style A fill:#e3f2fd
     style B fill:#e8f5e9
     style C fill:#fff3e0
     style D fill:#f3e5f5
     style E fill:#fce4ec
-    
-    F[No External Servers] -.->|Privacy| B
-    
     style F fill:#ffebee,stroke:#c62828,stroke-width:3px
 ```
 
@@ -856,6 +633,227 @@ SELECT id, ... FROM docs ORDER BY id
 - **Progressive loading**: Could load text pack in chunks on-demand
 - **WebAssembly**: Could compile FlexSearch to WASM for even better performance
 - **Service Worker**: Could cache data files for offline-first experience
+
+## 📱 Mobile Experience
+
+EES is fully optimized for mobile devices with a native app-like experience, for high-value elite target sexcapade IMAP snooping in the car, on your boat, on the golf course, or wherever your travels take you. The mobile interface adapts seamlessly to phones and tablets, providing touch-optimized controls, gesture navigation, and responsive layouts that make exploring emails effortless on the go.
+
+### Master-Detail Navigation
+
+**The Problem**: Desktop layouts with side-by-side panels don't work on small screens. Users need focused views that maximize screen real estate.
+
+**The Solution**: Master-detail pattern with smooth slide animations.
+
+#### How It Works
+
+```mermaid
+graph LR
+    A[Search Results<br/>Master View] -->|Tap Result| B[Detail View<br/>Full Screen]
+    B -->|Back Button| A
+    B -->|Swipe Right| A
+    
+    style A fill:#e3f2fd
+    style B fill:#f3e5f5
+```
+
+- **Master View**: Shows search results list, filters, and stats — optimized for browsing
+- **Detail View**: Full-screen email content with sticky header and navigation controls
+- **Smooth Transitions**: Slide animations (300ms cubic-bezier) provide visual continuity
+- **State Management**: URL state persists, so back/forward browser buttons work correctly
+
+**Architectural Benefits**:
+- **100% screen utilization**: No wasted space on small screens
+- **Focused reading**: Detail view eliminates distractions
+- **Native feel**: Slide animations match iOS/Android app patterns
+- **Accessibility**: Back button always visible, clear navigation cues
+
+### Touch-Optimized Controls
+
+#### Minimum Touch Targets
+- **All interactive elements**: Minimum 44×44px (Apple HIG / Material Design standard)
+- **Buttons**: Larger padding on mobile (1.25rem horizontal, 0.625rem vertical)
+- **Filter inputs**: 16px font size prevents iOS zoom-on-focus
+- **Result cards**: Full-width tap targets with visual feedback
+
+#### Gesture Support
+
+**Swipe-to-Back Navigation**:
+- **Gesture**: Swipe right from left edge of detail view
+- **Threshold**: 100px swipe distance triggers navigation
+- **Visual feedback**: Swipe indicator appears during gesture
+- **Haptic feedback**: Vibration on successful swipe (if device supports)
+- **Edge detection**: Only activates when starting from left 50px
+
+**Implementation Details**:
+```javascript
+// Detects horizontal swipe from left edge
+if (touchStartX < 50 && deltaX > 30 && Math.abs(deltaY) < Math.abs(deltaX)) {
+  // Show swipe indicator
+  // On completion (>100px), navigate back
+}
+```
+
+**Why This Matters**:
+- **One-handed use**: Natural thumb gesture for going back
+- **Reduces taps**: No need to reach for back button
+- **Discoverable**: Visual indicator teaches users the gesture
+- **Performance**: Passive event listeners prevent scroll jank
+
+### Responsive Layout Breakpoints
+
+| Breakpoint | Width | Layout Changes |
+|------------|-------|----------------|
+| **Desktop** | ≥768px | Side-by-side panels, full desktop features |
+| **Tablet/Mobile** | <768px | Master-detail navigation, mobile optimizations |
+| **Small Phone** | <480px | Compact mode, reduced padding, stacked header |
+| **Landscape** | <896px (landscape) | Reduced vertical heights, optimized for horizontal space |
+
+### Mobile-Specific Features
+
+#### Sticky Header with Scroll Shadow
+- **Position**: Sticky at top of viewport
+- **Safe area support**: Respects iOS notch and Android status bar (`env(safe-area-inset-top)`)
+- **Scroll feedback**: Shadow appears when scrolled (visual depth cue)
+- **Detail view header**: Sticky back button + title bar for easy navigation
+
+#### Horizontal Scrolling Cards
+- **Stats cards**: Horizontal scroll with snap points for browsing stats
+- **Search hint pills**: Scrollable pill container with snap alignment
+- **Smooth scrolling**: `-webkit-overflow-scrolling: touch` for iOS momentum
+- **Hidden scrollbars**: Clean aesthetic, scrollable via touch
+
+#### Filter Badge System
+- **Active filter count**: Badge shows number of active filters
+- **Visual indicator**: Gradient badge with glow effect
+- **Empty state**: Badge hidden when no filters active
+- **Quick access**: Tap badge to expand/collapse filter panel
+
+#### Active Filter Chips
+- **Visual feedback**: Shows all active filters as removable chips
+- **One-tap removal**: Tap chip to remove that filter
+- **Color coding**: Different colors for different filter types
+- **Scrollable container**: Handles many filters gracefully
+
+#### Scroll Indicators
+- **Visual cues**: Subtle indicators show scrollable content
+- **Dynamic display**: Only appears when content overflows
+- **Touch-friendly**: Larger on mobile for visibility
+
+### Performance Optimizations
+
+#### Reduced Animation Intensity
+- **Simplified effects**: Less blur, fewer shadows on mobile
+- **Performance-first**: Prioritizes 60fps scrolling over visual effects
+- **Conditional rendering**: Heavy effects disabled on low-end devices
+
+#### Optimized Typography
+- **Readable sizes**: 14px base font, 1.6 line height
+- **No zoom on focus**: 16px inputs prevent iOS auto-zoom
+- **Word wrapping**: Aggressive wrapping prevents horizontal scroll
+- **Code blocks**: Break-all for long lines, prevents overflow
+
+#### Memory Management
+- **Lazy loading**: Detail content only renders when viewed
+- **Scroll position**: Preserved when navigating back
+- **State cleanup**: Unused DOM elements cleaned up
+
+### iOS & Android Specific
+
+#### iOS Optimizations
+- **Safe area insets**: Respects notch and home indicator
+- **Momentum scrolling**: Native-feel scroll physics
+- **Tap highlight removal**: `-webkit-tap-highlight-color: transparent`
+- **Font rendering**: `-webkit-font-smoothing: antialiased`
+
+#### Android Optimizations
+- **Material Design spacing**: Follows 8dp grid system
+- **Touch feedback**: Active states provide visual feedback
+- **Back button**: Browser back button works correctly
+- **Status bar**: Safe area insets for modern Android devices
+
+### Mobile Search Experience
+
+#### Optimized Input Fields
+- **Larger touch targets**: 16px font prevents zoom
+- **Full-width inputs**: Maximum screen utilization
+- **Clear visual hierarchy**: Labels, placeholders, and values distinct
+- **Keyboard optimization**: Appropriate input types trigger correct keyboards
+
+#### Search Results
+- **Card-based layout**: Each result is a full-width card
+- **Visual selection**: Selected card highlighted with gradient border
+- **Smooth scrolling**: Results list scrolls smoothly even with thousands of items
+- **Infinite scroll ready**: Architecture supports pagination if needed
+
+#### Filter Panel
+- **Collapsible by default**: Hidden on mobile to maximize space
+- **Sticky toggle**: Filter button always accessible
+- **Badge indicator**: Shows active filter count
+- **Smooth animations**: Expand/collapse with spring physics
+
+### Landscape Mode
+
+**Special Optimizations**:
+- **Reduced heights**: Stats and lists use 70vh max-height
+- **Horizontal space**: Better use of wide screens
+- **Dual-pane ready**: Could show master-detail side-by-side on tablets
+- **Orientation detection**: Layout adjusts automatically
+
+### Accessibility on Mobile
+
+#### Touch Accessibility
+- **Large targets**: All interactive elements meet WCAG 2.1 AA (44×44px minimum)
+- **Clear labels**: All buttons have descriptive text or icons
+- **Focus indicators**: Visible focus states for keyboard navigation
+- **Screen reader support**: Semantic HTML, ARIA labels where needed
+
+#### Visual Accessibility
+- **High contrast**: Text meets WCAG contrast ratios
+- **Readable fonts**: 14px minimum, scalable with system settings
+- **Color independence**: Information conveyed through multiple cues (not just color)
+- **Reduced motion**: Respects `prefers-reduced-motion` media query
+
+### Mobile Performance Metrics
+
+| Metric | Desktop | Mobile | Notes |
+|--------|---------|--------|-------|
+| **Initial Load** | ~1-2s | ~2-3s | Slightly slower due to mobile network |
+| **Search Latency** | <50ms | <50ms | Same performance (Web Worker) |
+| **Scroll FPS** | 60fps | 60fps | Optimized animations |
+| **Memory Usage** | ~60MB | ~50MB | Mobile browsers more aggressive GC |
+| **Touch Response** | N/A | <16ms | 60fps touch handling |
+
+### Mobile-Specific Code Architecture
+
+#### Responsive Detection
+```javascript
+function updateMobileLayout() {
+  const isMobile = window.innerWidth < 768;
+  // Apply mobile-specific classes and behaviors
+  // Slide animations, master-detail switching
+}
+```
+
+#### State Management
+- **URL state**: Mobile navigation updates URL for shareability
+- **Scroll preservation**: Scroll position saved when navigating
+- **Selection clearing**: Back button clears selection state
+- **Layout recalculation**: Window resize triggers layout update
+
+#### Event Handling
+- **Passive listeners**: Touch events use passive listeners for scroll performance
+- **Debounced resize**: Window resize debounced to prevent excessive recalculations
+- **Touch vs. mouse**: Conditional event handlers based on device capabilities
+
+### Future Mobile Enhancements
+
+**Planned Features**:
+- **Pull-to-refresh**: Refresh search results with pull gesture
+- **Share sheet integration**: Native iOS/Android share dialogs
+- **Offline support**: Service Worker caching for offline access
+- **App-like install**: PWA manifest for "Add to Home Screen"
+- **Dark mode**: System preference detection and theme switching
+- **Haptic patterns**: More sophisticated vibration feedback
 
 ## ✨ One-liner
 
