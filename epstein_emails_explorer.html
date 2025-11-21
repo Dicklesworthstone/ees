@@ -12,46 +12,91 @@
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
     <style>
       :root {
-        --bg: #0b1020;
-        --bg-elevated: #0f1529;
-        --panel: rgba(18, 24, 45, 0.85);
-        --panel-hover: rgba(22, 30, 55, 0.95);
-        --border: #1f2a44;
-        --border-bright: #2a3b5f;
-        --accent: #7cf0c5;
-        --accent-hover: #5ee6b5;
-        --accent-2: #7fb0ff;
-        --accent-2-hover: #6ba0ef;
-        --text-primary: #f1f5f9;
-        --text-secondary: #cbd5e1;
-        --text-tertiary: #94a3b8;
-        --text-muted: #64748b;
-        --success: #10b981;
-        --warning: #f59e0b;
-        --error: #ef4444;
+        /* Refined color palette - Stripe-inspired */
+        --bg: #0a0e1a;
+        --bg-elevated: #0d1117;
+        --bg-subtle: #161b22;
+        --panel: rgba(13, 17, 23, 0.92);
+        --panel-hover: rgba(21, 26, 35, 0.98);
+        --border: rgba(48, 54, 61, 0.48);
+        --border-hover: rgba(99, 110, 123, 0.48);
+        --border-active: rgba(124, 240, 197, 0.48);
 
-        /* Shadows */
-        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.3);
-        --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.4);
-        --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.5);
-        --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.6);
+        /* Accent colors with refined shades */
+        --accent: #34d399;
+        --accent-hover: #10b981;
+        --accent-light: #6ee7b7;
+        --accent-dark: #059669;
+        --accent-glow: rgba(52, 211, 153, 0.24);
 
-        /* Transitions */
-        --transition-fast: 120ms cubic-bezier(0.4, 0, 0.2, 1);
-        --transition-base: 200ms cubic-bezier(0.4, 0, 0.2, 1);
-        --transition-smooth: 300ms cubic-bezier(0.4, 0, 0.1, 1);
+        /* Secondary accent */
+        --accent-2: #60a5fa;
+        --accent-2-hover: #3b82f6;
+        --accent-2-glow: rgba(96, 165, 250, 0.24);
+
+        /* Text hierarchy */
+        --text-primary: #f0f6fc;
+        --text-secondary: #c9d1d9;
+        --text-tertiary: #8b949e;
+        --text-muted: #6e7681;
+        --text-subtle: #484f58;
+
+        /* Semantic colors */
+        --success: #3fb950;
+        --success-emphasis: #238636;
+        --warning: #d29922;
+        --warning-emphasis: #9e6a03;
+        --error: #f85149;
+        --error-emphasis: #da3633;
+        --info: #58a6ff;
+        --info-emphasis: #1f6feb;
+
+        /* Refined shadows with multiple layers */
+        --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.16);
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.24), 0 1px 2px rgba(0, 0, 0, 0.16);
+        --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.32), 0 2px 8px rgba(0, 0, 0, 0.24);
+        --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.40), 0 4px 16px rgba(0, 0, 0, 0.32);
+        --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.48), 0 8px 32px rgba(0, 0, 0, 0.40);
+        --shadow-2xl: 0 32px 96px rgba(0, 0, 0, 0.56), 0 12px 48px rgba(0, 0, 0, 0.48);
+
+        /* Refined transitions - spring-like */
+        --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-smooth: 350ms cubic-bezier(0.4, 0, 0.1, 1);
+        --transition-spring: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+        /* Spacing scale */
+        --space-1: 0.25rem;
+        --space-2: 0.5rem;
+        --space-3: 0.75rem;
+        --space-4: 1rem;
+        --space-5: 1.25rem;
+        --space-6: 1.5rem;
+        --space-8: 2rem;
+        --space-10: 2.5rem;
+        --space-12: 3rem;
+
+        /* Border radius scale */
+        --radius-sm: 0.375rem;
+        --radius-md: 0.5rem;
+        --radius-lg: 0.75rem;
+        --radius-xl: 1rem;
+        --radius-2xl: 1.5rem;
+        --radius-full: 9999px;
       }
 
       body {
-        background: radial-gradient(circle at 20% 15%, rgba(79, 70, 229, 0.15), transparent 28%),
-          radial-gradient(circle at 85% 5%, rgba(16, 185, 129, 0.13), transparent 25%),
-          radial-gradient(circle at 45% 85%, rgba(14, 165, 233, 0.12), transparent 35%),
-          radial-gradient(circle at 100% 100%, rgba(139, 92, 246, 0.08), transparent 40%),
+        background: radial-gradient(circle at 22% 12%, rgba(52, 211, 153, 0.09), transparent 32%),
+          radial-gradient(circle at 88% 8%, rgba(96, 165, 250, 0.08), transparent 28%),
+          radial-gradient(circle at 48% 90%, rgba(139, 92, 246, 0.07), transparent 38%),
+          radial-gradient(circle at 95% 95%, rgba(244, 114, 182, 0.05), transparent 42%),
           var(--bg);
-        font-family: "Space Grotesk", "Inter", "SF Pro Display", system-ui, -apple-system, sans-serif;
+        font-family: "Space Grotesk", "Inter", "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
         color: var(--text-primary);
         -webkit-font-smoothing: antialiased;
         -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        letter-spacing: -0.011em;
       }
 
       /* Glass morphism with enhanced depth */
