@@ -7,11 +7,14 @@ from collections import Counter
 import random
 import brotli
 
-from datasets import load_dataset
+from datasets import load_dataset, logging as ds_logging
 from email import policy
 from email.parser import Parser
 from email.utils import getaddresses
 from dateutil import parser as dateparser
+
+# Suppress Hugging Face dataset warnings (e.g. missing repo card metadata)
+ds_logging.set_verbosity_error()
 
 
 DATA_DIR = pathlib.Path("data")
@@ -96,8 +99,17 @@ def normalize_subject(subj):
 def parse_date(date_str):
     if not date_str:
         return None, None
+    
+    # Standard US timezones found in email headers
+    tzinfos = {
+        "EST": -18000, "EDT": -14400,
+        "CST": -21600, "CDT": -18000,
+        "MST": -25200, "MDT": -21600,
+        "PST": -28800, "PDT": -25200
+    }
+
     try:
-        dt = dateparser.parse(date_str)
+        dt = dateparser.parse(date_str, tzinfos=tzinfos)
     except Exception:
         return None, None
     if not dt:

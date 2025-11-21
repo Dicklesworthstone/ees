@@ -53,6 +53,9 @@ if [ ! -f "pyproject.toml" ]; then
   exit 1
 fi
 
+echo "Cleaning up previous virtual environment..."
+rm -rf .venv
+
 echo "Creating Python 3.13 virtual env with uv..."
 uv venv --python 3.13 .venv
 
