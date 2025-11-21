@@ -1710,11 +1710,14 @@
 
           if (!results.length) {
             const emptyState = document.createElement("div");
-            emptyState.className = "flex flex-col items-center justify-center py-12 px-4 text-center fade-in";
+            emptyState.className = "flex flex-col items-center justify-center py-16 px-6 text-center fade-in";
             emptyState.innerHTML = `
-              <div class="text-5xl mb-4 opacity-40">🔍</div>
-              <p class="text-sm font-semibold text-slate-300 mb-1">No results found</p>
-              <p class="text-xs text-slate-500">Try adjusting your search query or filters</p>
+              <div class="relative mb-6">
+                <div class="absolute inset-0 bg-gradient-to-br from-emerald-400/20 to-blue-500/20 blur-2xl opacity-50"></div>
+                <div class="relative text-6xl opacity-60">🔍</div>
+              </div>
+              <h3 class="text-base font-semibold text-slate-200 mb-2 tracking-tight">No results found</h3>
+              <p class="text-sm text-slate-400 leading-relaxed max-w-xs">Try adjusting your search query or filters to find what you're looking for</p>
             `;
             list.appendChild(emptyState);
             return;
@@ -1860,11 +1863,14 @@
           const top = candidates.slice(0, 200);
           if (!top.length) {
             const emptyState = document.createElement("div");
-            emptyState.className = "flex flex-col items-center justify-center py-12 px-4 text-center fade-in";
+            emptyState.className = "flex flex-col items-center justify-center py-14 px-5 text-center fade-in";
             emptyState.innerHTML = `
-              <div class="text-4xl mb-3 opacity-40">👥</div>
-              <p class="text-xs font-semibold text-slate-300 mb-1">No people matched</p>
-              <p class="text-[0.7rem] text-slate-500">Try a different search term</p>
+              <div class="relative mb-5">
+                <div class="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-purple-500/20 blur-2xl opacity-50"></div>
+                <div class="relative text-5xl opacity-60">👥</div>
+              </div>
+              <h3 class="text-sm font-semibold text-slate-200 mb-2 tracking-tight">No people matched</h3>
+              <p class="text-xs text-slate-400 leading-relaxed max-w-[16rem]">Try a different search term to find participants</p>
             `;
             listEl.appendChild(emptyState);
             return;
@@ -1966,8 +1972,8 @@
           const participants = doc.participants || [];
           if (!participants.length) {
             const span = document.createElement("div");
-            span.className = "text-[0.7rem] text-slate-500 italic flex items-center gap-2 py-2";
-            span.innerHTML = `<span class="text-sm opacity-50">👤</span> No participants found`;
+            span.className = "text-[0.7rem] text-slate-400 flex items-center gap-2 py-3 px-2 rounded-lg bg-slate-900/30 border border-slate-800/50";
+            span.innerHTML = `<span class="text-sm opacity-70">👤</span> <span class="font-medium">No participants found</span>`;
             container.appendChild(span);
             return;
           }
@@ -2006,8 +2012,8 @@
           const neighbors = state.neighborsById.get(idStr) || [];
           if (!neighbors.length) {
             const span = document.createElement("div");
-            span.className = "text-[0.7rem] text-slate-500 italic flex items-center gap-2 py-2";
-            span.innerHTML = `<span class="text-sm opacity-50">🔗</span> No similar documents`;
+            span.className = "text-[0.7rem] text-slate-400 flex items-center gap-2 py-3 px-2 rounded-lg bg-slate-900/30 border border-slate-800/50";
+            span.innerHTML = `<span class="text-sm opacity-70">🔗</span> <span class="font-medium">No similar documents</span>`;
             container.appendChild(span);
             return;
           }
@@ -2064,8 +2070,8 @@
           const tid = doc.thread_id;
           if (!tid) {
             headerEl.innerHTML = `
-              <div class="text-[0.7rem] text-slate-500 italic flex items-center gap-2 py-2">
-                <span class="text-sm opacity-50">💬</span> Not part of a thread
+              <div class="text-[0.7rem] text-slate-400 flex items-center gap-2 py-3 px-2 rounded-lg bg-slate-900/30 border border-slate-800/50">
+                <span class="text-sm opacity-70">💬</span> <span class="font-medium">Not part of a thread</span>
               </div>
             `;
             return;
@@ -2074,7 +2080,7 @@
           const threadDocs = state.threadsById.get(tid) || [];
           if (!threadDocs.length) {
             headerEl.innerHTML = `
-              <div class="text-[0.7rem] text-slate-500 italic">Thread information unavailable</div>
+              <div class="text-[0.7rem] text-slate-400 py-2 px-2 rounded-lg bg-slate-900/30 border border-slate-800/50 font-medium">Thread information unavailable</div>
             `;
             return;
           }
