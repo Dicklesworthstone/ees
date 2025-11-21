@@ -224,7 +224,7 @@ async function getTextById(id) {
     const offset = row.text_offset;
     const length = row.text_length;
     const compression = row.compression || "br";
-    if (offset != null && length != null) {
+    if (offset !== null && offset !== undefined && length !== null && length !== undefined) {
       const slice = new Uint8Array(textPack, offset, length);
       if (compression === "br") {
         const inflated = fflate.brotliDecompress(slice);
@@ -250,7 +250,7 @@ async function buildFullIndex(db, decoder, meta) {
     const length = row.text_length;
     const compression = row.compression || "br";
     let text = "";
-    if (offset != null && length != null) {
+    if (offset !== null && offset !== undefined && length !== null && length !== undefined) {
       const slice = new Uint8Array(textPack, offset, length);
       if (compression === "br") {
         const inflated = fflate.brotliDecompress(slice);

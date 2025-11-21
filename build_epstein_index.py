@@ -81,10 +81,15 @@ def normalize_subject(subj):
     if not subj:
         return None
     s = subj.strip()
-    s_clean = re.sub(r"^\\s*(re|fw|fwd)\\s*:\\s*", "", s, flags=re.IGNORECASE)
-    if not s_clean:
-        s_clean = s
-    return s_clean
+    # Remove all Re:/Fw:/Fwd: prefixes (handle multiple)
+    while True:
+        s_new = re.sub(r"^\\s*(re|fw|fwd)\\s*:\\s*", "", s, flags=re.IGNORECASE)
+        if s_new == s:  # No more prefixes found
+            break
+        s = s_new
+    if not s:
+        s = subj.strip()  # If everything was removed, keep original
+    return s
 
 
 def parse_date(date_str):
@@ -96,8 +101,6 @@ def parse_date(date_str):
         return None, None
     if not dt:
         return None, None
-    if not dt.tzinfo:
-        dt = dt.replace(tzinfo=None)
     iso = dt.isoformat()
     date_key = dt.date().isoformat()
     return iso, date_key
@@ -501,7 +504,7 @@ def build():
                 if len(sample_clean) < 50:
                     sample_clean.append(chunk_text_value)
                 else:
-                    r = random.randint(0, doc_id_seq)
+                    r = random.randint(0, doc_id_seq - 1)
                     if r < 50:
                         sample_clean[r] = chunk_text_value
 
