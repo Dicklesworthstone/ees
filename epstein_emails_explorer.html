@@ -421,6 +421,7 @@
         body {
           font-size: 14px;
           line-height: 1.6;
+          overflow-x: hidden;
         }
 
         /* Header optimizations with safe area support */
@@ -429,6 +430,16 @@
           padding-right: 1rem !important;
           padding-top: max(1rem, env(safe-area-inset-top)) !important;
           padding-bottom: 1rem !important;
+          position: sticky;
+          top: 0;
+          z-index: 30;
+          background: var(--bg);
+          transition: box-shadow var(--transition-base);
+        }
+
+        /* Add shadow when scrolled */
+        header.scrolled {
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
         }
 
         /* Main content spacing with safe area support */
@@ -444,7 +455,7 @@
         /* Make aside full-width on mobile with better sizing */
         aside {
           width: 100% !important;
-          max-height: 55vh;
+          max-height: calc(100vh - 320px);
           margin-bottom: 0;
           overflow-x: hidden;
         }
@@ -453,14 +464,59 @@
         section {
           margin-left: 0 !important;
           width: 100%;
-          min-height: 40vh;
+          min-height: calc(100vh - 220px);
           overflow-x: hidden;
+        }
+
+        /* Slide animations using opacity instead of transform to avoid position:absolute issues */
+        aside.slide-out-left {
+          animation: fadeOut 0.2s ease-out forwards;
+        }
+
+        aside.slide-in-left {
+          animation: fadeIn 0.2s ease-in forwards;
+        }
+
+        section.slide-in-right {
+          animation: fadeIn 0.2s ease-in forwards;
+        }
+
+        section.slide-out-right {
+          animation: fadeOut 0.2s ease-out forwards;
+        }
+
+        @keyframes fadeOut {
+          from {
+            opacity: 1;
+          }
+          to {
+            opacity: 0;
+          }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
         }
 
         /* Increase touch targets */
         button {
           min-height: 44px;
           position: relative;
+        }
+
+        /* Sticky search/mode area on mobile */
+        #sidebar-panel > div:first-child {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+          background: var(--bg);
+          padding-bottom: 1rem;
+          margin-bottom: -1rem;
         }
 
         /* Mode toggle buttons - larger for easier tapping */
@@ -472,12 +528,53 @@
           font-size: 0.8rem !important;
         }
 
+        /* Filter toggle with active count badge */
+        #filters-header .mobile-filter-badge {
+          display: inline-flex !important;
+          align-items: center;
+          justify-content: center;
+          min-width: 20px;
+          height: 20px;
+          padding: 0 6px;
+          background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+          color: #000;
+          border-radius: 10px;
+          font-size: 0.65rem;
+          font-weight: 700;
+          margin-left: 0.5rem;
+          box-shadow: 0 2px 8px var(--accent-glow);
+        }
+
+        #filters-header .mobile-filter-badge.empty {
+          display: none !important;
+        }
+
         /* Search input - optimized for mobile */
         #search-query {
           font-size: 16px !important; /* Prevents iOS zoom */
           padding-top: 0.875rem !important;
           padding-bottom: 0.875rem !important;
           line-height: 1.5;
+        }
+
+        /* Search hint pills - make scrollable on mobile */
+        #panel-docs .flex.flex-wrap.gap-1\.5 {
+          flex-wrap: nowrap !important;
+          overflow-x: auto;
+          overflow-y: hidden;
+          -webkit-overflow-scrolling: touch;
+          scroll-snap-type: x mandatory;
+          scrollbar-width: none;
+          padding-bottom: 0.25rem;
+        }
+
+        #panel-docs .flex.flex-wrap.gap-1\.5::-webkit-scrollbar {
+          display: none;
+        }
+
+        #panel-docs .flex.flex-wrap.gap-1\.5 > span {
+          flex-shrink: 0;
+          scroll-snap-align: start;
         }
 
         /* Filter inputs - optimized for mobile */
@@ -499,16 +596,58 @@
           overflow-wrap: break-word;
         }
 
-        /* Stats cards - stack and optimize on small screens */
+        /* Stats cards - horizontal scroll on mobile for better UX */
+        header .md\:grid-cols-3 {
+          display: flex !important;
+          flex-direction: row !important;
+          gap: 0.75rem !important;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scroll-snap-type: x mandatory;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+          padding-bottom: 0.5rem;
+        }
+
+        header .md\:grid-cols-3::-webkit-scrollbar {
+          display: none;
+        }
+
+        header .md\:grid-cols-3 > div {
+          flex: 0 0 85%;
+          scroll-snap-align: start;
+          padding: 1rem !important;
+        }
+
+        /* Scroll indicator for stats */
+        header .md\:grid-cols-3::after {
+          content: '';
+          flex: 0 0 0.5rem;
+        }
+
+        /* Stack stats cards on very small screens */
         @media (max-width: 640px) {
-          .md\:grid-cols-3 {
-            grid-template-columns: 1fr !important;
-            gap: 0.75rem !important;
+          header .md\:grid-cols-3 > div {
+            flex: 0 0 90%;
           }
         }
 
-        .md\:grid-cols-3 > div {
-          padding: 1rem !important;
+        /* Touch ripple effect for buttons and cards - using ::after to avoid conflicts */
+        button:not(.pill), .card-hover {
+          position: relative;
+          overflow: hidden;
+        }
+
+        /* Touch feedback - override desktop hover effect on mobile with active state */
+        /* Don't use ::after as it conflicts with existing desktop button::after */
+        button:not(.pill):active {
+          background-color: rgba(124, 240, 197, 0.08);
+          transform: scale(0.98);
+        }
+
+        /* Card ripple uses a wrapper approach to avoid ::before conflict */
+        .card-hover {
+          -webkit-tap-highlight-color: transparent;
         }
 
         /* Reduce animation intensity on mobile for performance */
@@ -524,6 +663,22 @@
         h1 {
           font-size: 1.5rem !important;
           line-height: 1.3 !important;
+        }
+
+        /* Helper pills - make more compact or hide on very small screens */
+        header .pill {
+          font-size: 0.65rem !important;
+          padding: 0.375rem 0.625rem !important;
+        }
+
+        header .pill code {
+          font-size: 0.6rem !important;
+        }
+
+        @media (max-width: 640px) {
+          header .pill:nth-child(n+2) {
+            display: none !important;
+          }
         }
 
         /* Detail view title - better wrapping */
@@ -569,38 +724,101 @@
           margin-bottom: 0.5rem;
         }
 
-        /* Chunk navigation - stack vertically with better layout */
+        /* Active filter chips - floating display */
+        .mobile-active-filters {
+          display: flex !important;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+          padding: 0.75rem 1rem;
+          background: rgba(13, 17, 23, 0.95);
+          backdrop-filter: blur(10px);
+          border-bottom: 1px solid var(--border);
+          margin-top: -0.5rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .mobile-active-filters.empty {
+          display: none !important;
+        }
+
+        .mobile-filter-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.375rem 0.75rem;
+          background: linear-gradient(135deg, rgba(52, 211, 153, 0.15), rgba(96, 165, 250, 0.1));
+          border: 1px solid rgba(52, 211, 153, 0.3);
+          border-radius: 1rem;
+          font-size: 0.7rem;
+          font-weight: 600;
+          color: var(--accent-light);
+        }
+
+        .mobile-filter-chip button {
+          min-height: auto;
+          padding: 0;
+          width: 16px;
+          height: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 50%;
+          font-size: 0.7rem;
+          line-height: 1;
+        }
+
+        /* Chunk navigation - keep buttons compact */
         #detail-chunk-nav > div {
-          flex-direction: column !important;
-          align-items: stretch !important;
-          gap: 0.75rem;
+          flex-direction: row !important;
+          flex-wrap: wrap !important;
+          align-items: center !important;
+          gap: 0.5rem;
+          justify-content: space-between;
         }
 
         #detail-chunk-nav button {
-          width: 100%;
-          justify-content: center;
-        }
-
-        #detail-chunk-nav .flex.items-center.gap-2 {
-          flex-direction: column !important;
-          gap: 0.5rem !important;
-        }
-
-        #detail-chunk-nav .flex.items-center.gap-2 button {
-          width: 100%;
+          flex: 0 1 auto;
+          min-width: 44px;
+          padding: 0.5rem 0.75rem !important;
+          font-size: 0.7rem !important;
         }
 
         /* Results and people lists - optimize height and scrolling */
         #results-list {
-          max-height: 50vh;
+          max-height: calc(100vh - 420px);
+          min-height: 200px;
           -webkit-overflow-scrolling: touch;
           overscroll-behavior: contain;
+          scroll-behavior: smooth;
         }
 
         #people-list {
-          max-height: 45vh;
+          max-height: calc(100vh - 400px);
+          min-height: 200px;
           -webkit-overflow-scrolling: touch;
           overscroll-behavior: contain;
+          scroll-behavior: smooth;
+        }
+
+        /* Scroll indicators for lists */
+        #results-list::before,
+        #people-list::before {
+          content: '';
+          position: sticky;
+          top: 0;
+          display: block;
+          height: 2px;
+          background: linear-gradient(90deg, var(--accent), var(--accent-2));
+          opacity: 0;
+          transition: opacity var(--transition-base);
+          margin-bottom: -2px;
+          z-index: 10;
+        }
+
+        #results-list.scrolled::before,
+        #people-list.scrolled::before {
+          opacity: 1;
         }
 
         /* Detail body - optimize for mobile reading */
@@ -617,6 +835,39 @@
         #people-list .flex.flex-col.items-center {
           padding-top: 2rem !important;
           padding-bottom: 2rem !important;
+        }
+
+        /* Swipe gesture indicator */
+        .mobile-swipe-indicator {
+          position: fixed;
+          left: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 4px;
+          height: 60px;
+          background: linear-gradient(180deg, transparent, var(--accent), transparent);
+          opacity: 0;
+          transition: opacity var(--transition-fast), width var(--transition-fast);
+          pointer-events: none;
+          z-index: 100;
+          border-radius: 0 4px 4px 0;
+        }
+
+        .mobile-swipe-indicator.active {
+          opacity: 0.8;
+          width: 8px;
+        }
+
+        /* Enhanced result cards for mobile */
+        #results-list button {
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+
+        #results-list button.selected {
+          background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(96, 165, 250, 0.08)) !important;
+          border-left: 3px solid var(--accent) !important;
+          padding-left: calc(1rem - 3px) !important;
         }
 
         /* Better mobile scrollbar */
@@ -1189,30 +1440,63 @@
           }
         }
 
+        // Track animation timeouts to prevent race conditions
+        let mobileLayoutTimeouts = [];
+
         function updateMobileLayout() {
+          // Clear any pending animation timeouts to prevent race conditions
+          mobileLayoutTimeouts.forEach(id => clearTimeout(id));
+          mobileLayoutTimeouts = [];
+
           // Only relevant on mobile
           if (window.innerWidth >= 768) {
-            if (elements.sidebarPanel) elements.sidebarPanel.classList.remove("hidden");
+            if (elements.sidebarPanel) {
+              elements.sidebarPanel.classList.remove("hidden");
+              elements.sidebarPanel.classList.remove("slide-out-left", "slide-in-left");
+            }
             if (elements.detailPanel) {
                elements.detailPanel.classList.remove("hidden");
                elements.detailPanel.classList.add("flex");
+               elements.detailPanel.classList.remove("slide-in-right", "slide-out-right");
             }
             return;
           }
 
           if (state.selectedDocId) {
-            // Show Detail, Hide List
-            if (elements.sidebarPanel) elements.sidebarPanel.classList.add("hidden");
+            // Show Detail with animation, Hide List
+            if (elements.sidebarPanel) {
+              elements.sidebarPanel.classList.add("slide-out-left");
+              const timeoutId = setTimeout(() => {
+                elements.sidebarPanel.classList.add("hidden");
+                elements.sidebarPanel.classList.remove("slide-out-left");
+              }, 200);  // Match animation duration
+              mobileLayoutTimeouts.push(timeoutId);
+            }
             if (elements.detailPanel) {
                elements.detailPanel.classList.remove("hidden");
-               elements.detailPanel.classList.add("flex");
+               elements.detailPanel.classList.add("flex", "slide-in-right");
+               const timeoutId = setTimeout(() => {
+                 elements.detailPanel.classList.remove("slide-in-right");
+               }, 200);  // Match animation duration
+               mobileLayoutTimeouts.push(timeoutId);
             }
           } else {
-            // Show List, Hide Detail
-            if (elements.sidebarPanel) elements.sidebarPanel.classList.remove("hidden");
+            // Show List with animation, Hide Detail
+            if (elements.sidebarPanel) {
+              elements.sidebarPanel.classList.remove("hidden", "slide-out-left");
+              elements.sidebarPanel.classList.add("slide-in-left");
+              const timeoutId = setTimeout(() => {
+                elements.sidebarPanel.classList.remove("slide-in-left");
+              }, 200);  // Match animation duration
+              mobileLayoutTimeouts.push(timeoutId);
+            }
             if (elements.detailPanel) {
-               elements.detailPanel.classList.add("hidden");
-               elements.detailPanel.classList.remove("flex");
+               elements.detailPanel.classList.add("slide-out-right");
+               const timeoutId = setTimeout(() => {
+                 elements.detailPanel.classList.add("hidden");
+                 elements.detailPanel.classList.remove("flex", "slide-out-right");
+               }, 200);  // Match animation duration
+               mobileLayoutTimeouts.push(timeoutId);
             }
           }
         }
@@ -1788,11 +2072,16 @@
             btn.type = "button";
             btn.dataset.docId = String(doc.id);
             const isSelected = String(state.selectedDocId) === String(doc.id);
-            btn.className =
-              "block w-full text-left px-4 py-3.5 rounded-xl mb-2 border border-slate-800/80 bg-slate-900/70 card-hover transition-all duration-200 fade-in " +
-              (isSelected
-                ? "ring-2 ring-emerald-400/70 bg-gradient-to-r from-emerald-500/10 to-blue-500/5 border-emerald-500/50"
-                : "hover:border-slate-700/90");
+
+            let className = "block w-full text-left px-4 py-3.5 rounded-xl mb-2 border border-slate-800/80 bg-slate-900/70 card-hover transition-all duration-200 fade-in";
+
+            if (isSelected) {
+              className += " selected ring-2 ring-emerald-400/70 bg-gradient-to-r from-emerald-500/10 to-blue-500/5 border-emerald-500/50";
+            } else {
+              className += " hover:border-slate-700/90";
+            }
+
+            btn.className = className;
             btn.style.animationDelay = `${Math.min(index * 30, 300)}ms`;
 
             const title = document.createElement("div");
@@ -1862,6 +2151,10 @@
               if (inp.checked) state.activeKinds.add(kind);
               else state.activeKinds.delete(kind);
               scheduleSearch();
+
+              // Update mobile UI elements
+              if (state.updateFilterBadge) state.updateFilterBadge();
+              if (state.renderActiveFilterChips) state.renderActiveFilterChips();
             });
 
             const span = document.createElement("span");
@@ -2388,6 +2681,302 @@
           renderResultsList(); // Clear selection highlight
         }
 
+        // ==================== Mobile-Specific Enhancements ====================
+
+        // Track if mobile enhancements have been initialized to prevent duplicates
+        let mobileEnhancementsInitialized = false;
+
+        function setupMobileEnhancements() {
+          if (window.innerWidth >= 768) return; // Desktop only
+          if (mobileEnhancementsInitialized) return; // Already initialized
+
+          // Add swipe gesture support for going back from detail view
+          setupSwipeGestures();
+
+          // Add header scroll shadow
+          setupHeaderScrollShadow();
+
+          // Add scroll indicators for lists
+          setupListScrollIndicators();
+
+          // Update filter badge count
+          setupFilterBadge();
+
+          // Add active filter chips
+          setupActiveFilterChips();
+
+          mobileEnhancementsInitialized = true;
+        }
+
+        function setupSwipeGestures() {
+          let touchStartX = 0;
+          let touchStartY = 0;
+          let isSwiping = false;
+
+          const detailPanel = elements.detailPanel;
+          if (!detailPanel) return;
+
+          // Create swipe indicator (check if it already exists first)
+          let indicator = document.querySelector(".mobile-swipe-indicator");
+          if (!indicator) {
+            indicator = document.createElement("div");
+            indicator.className = "mobile-swipe-indicator";
+            document.body.appendChild(indicator);
+          }
+
+          detailPanel.addEventListener("touchstart", (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            isSwiping = false;
+          }, { passive: true });
+
+          detailPanel.addEventListener("touchmove", (e) => {
+            if (!state.selectedDocId || window.innerWidth >= 768) return;
+
+            const touchX = e.touches[0].clientX;
+            const touchY = e.touches[0].clientY;
+            const deltaX = touchX - touchStartX;
+            const deltaY = touchY - touchStartY;
+
+            // Detect horizontal swipe from left edge
+            if (touchStartX < 50 && deltaX > 30 && Math.abs(deltaY) < Math.abs(deltaX)) {
+              isSwiping = true;
+              indicator.classList.add("active");
+            }
+          }, { passive: true });
+
+          detailPanel.addEventListener("touchend", (e) => {
+            indicator.classList.remove("active");
+
+            if (!isSwiping || !state.selectedDocId || window.innerWidth >= 768) {
+              isSwiping = false;
+              return;
+            }
+
+            const touchX = e.changedTouches[0].clientX;
+            const deltaX = touchX - touchStartX;
+
+            // Swipe threshold: 100px
+            if (deltaX > 100) {
+              handleMobileBack();
+              // Haptic feedback if available
+              if (navigator.vibrate) {
+                navigator.vibrate(10);
+              }
+            }
+
+            isSwiping = false;
+          }, { passive: true });
+        }
+
+        function setupHeaderScrollShadow() {
+          // Cache header element to avoid DOM query on every scroll
+          const header = document.querySelector("header");
+          if (!header) return;
+
+          let isScrolled = false;
+
+          window.addEventListener("scroll", () => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+            // Only update class if state changes to minimize DOM manipulation
+            if (scrollTop > 10 && !isScrolled) {
+              header.classList.add("scrolled");
+              isScrolled = true;
+            } else if (scrollTop <= 10 && isScrolled) {
+              header.classList.remove("scrolled");
+              isScrolled = false;
+            }
+          }, { passive: true });
+        }
+
+        function setupListScrollIndicators() {
+          const resultsList = elements.resultsList;
+          const peopleList = elements.peopleList;
+
+          [resultsList, peopleList].forEach(list => {
+            if (!list) return;
+
+            let isScrolled = false;
+
+            list.addEventListener("scroll", () => {
+              const shouldShowIndicator = list.scrollTop > 10;
+
+              // Only update class if state changes to minimize DOM manipulation
+              if (shouldShowIndicator && !isScrolled) {
+                list.classList.add("scrolled");
+                isScrolled = true;
+              } else if (!shouldShowIndicator && isScrolled) {
+                list.classList.remove("scrolled");
+                isScrolled = false;
+              }
+            }, { passive: true });
+          });
+        }
+
+        function setupFilterBadge() {
+          // This will be called in renderKindsFilter and whenever filters change
+          const updateBadge = () => {
+            if (window.innerWidth >= 768) return;
+
+            let activeFilterCount = 0;
+
+            // Count active kind filters
+            if (state.activeKinds.size < state.allKinds.length) {
+              activeFilterCount += state.activeKinds.size;
+            }
+
+            // Count other active filters
+            if (elements.filenameInput?.value) activeFilterCount++;
+            if (elements.dateFromInput?.value) activeFilterCount++;
+            if (elements.dateToInput?.value) activeFilterCount++;
+            if (state.selectedPerson) activeFilterCount++;
+            if (state.selectedDomain) activeFilterCount++;
+
+            // Create or update badge
+            const filtersHeader = elements.filtersHeader;
+            if (!filtersHeader) return;
+
+            let badge = filtersHeader.querySelector(".mobile-filter-badge");
+            if (!badge) {
+              badge = document.createElement("span");
+              badge.className = "mobile-filter-badge";
+              // More robust: find the first span with uppercase text (the label)
+              const spans = filtersHeader.querySelectorAll("span");
+              const labelSpan = Array.from(spans).find(s =>
+                s.textContent && s.textContent.includes("Filters")
+              );
+              if (labelSpan) {
+                labelSpan.appendChild(badge);
+              } else {
+                // Fallback: append to filters header directly
+                filtersHeader.appendChild(badge);
+              }
+            }
+
+            if (activeFilterCount > 0) {
+              badge.textContent = activeFilterCount;
+              badge.classList.remove("empty");
+            } else {
+              badge.classList.add("empty");
+            }
+          };
+
+          // Update badge when filters change
+          state.updateFilterBadge = updateBadge;
+          updateBadge();
+        }
+
+        function setupActiveFilterChips() {
+          const renderChips = () => {
+            if (window.innerWidth >= 768) return;
+
+            const panelDocs = elements.panelDocs;
+            if (!panelDocs) return;
+
+            // Remove existing chips container
+            let chipsContainer = panelDocs.querySelector(".mobile-active-filters");
+            if (chipsContainer) {
+              chipsContainer.remove();
+            }
+
+            // Collect active filters
+            const activeFilters = [];
+
+            if (elements.filenameInput?.value) {
+              activeFilters.push({
+                type: "filename",
+                label: `📄 ${elements.filenameInput.value}`,
+                remove: () => {
+                  elements.filenameInput.value = "";
+                  scheduleSearch();
+                }
+              });
+            }
+
+            if (elements.dateFromInput?.value || elements.dateToInput?.value) {
+              const from = elements.dateFromInput?.value || "...";
+              const to = elements.dateToInput?.value || "...";
+              activeFilters.push({
+                type: "date",
+                label: `📅 ${from} → ${to}`,
+                remove: () => {
+                  elements.dateFromInput.value = "";
+                  elements.dateToInput.value = "";
+                  scheduleSearch();
+                }
+              });
+            }
+
+            if (state.selectedPerson) {
+              const person = state.peopleByAddress.get(state.selectedPerson);
+              const label = person?.display_name || state.selectedPerson;
+              activeFilters.push({
+                type: "person",
+                label: `👤 ${label}`,
+                remove: () => {
+                  state.selectedPerson = null;
+                  scheduleSearch();
+                }
+              });
+            }
+
+            if (state.activeKinds.size < state.allKinds.length && state.activeKinds.size > 0) {
+              activeFilters.push({
+                type: "kinds",
+                label: `🏷️ ${state.activeKinds.size} types`,
+                remove: () => {
+                  state.activeKinds = new Set(state.allKinds);
+                  renderKindsFilter();
+                  scheduleSearch();
+                }
+              });
+            }
+
+            if (activeFilters.length === 0) return;
+
+            // Create chips container
+            chipsContainer = document.createElement("div");
+            chipsContainer.className = "mobile-active-filters";
+
+            activeFilters.forEach(filter => {
+              const chip = document.createElement("div");
+              chip.className = "mobile-filter-chip";
+              chip.innerHTML = `
+                <span>${filter.label}</span>
+                <button type="button" aria-label="Remove filter">×</button>
+              `;
+              chip.querySelector("button").addEventListener("click", () => {
+                filter.remove();
+                renderChips();
+                if (state.updateFilterBadge) state.updateFilterBadge();
+              });
+              chipsContainer.appendChild(chip);
+            });
+
+            // Insert after the search section, before the filters
+            // More robust: look for the search query section and insert after it
+            const searchSection = panelDocs.querySelector("#search-query")?.closest(".space-y-3");
+            if (searchSection && searchSection.nextElementSibling) {
+              // Insert after search section (before the next sibling)
+              searchSection.parentNode.insertBefore(chipsContainer, searchSection.nextElementSibling);
+            } else if (searchSection) {
+              // Search section is last child, append after it
+              searchSection.parentNode.appendChild(chipsContainer);
+            } else {
+              // Fallback: insert at beginning of panel-docs
+              const firstChild = panelDocs.firstElementChild;
+              if (firstChild) {
+                panelDocs.insertBefore(chipsContainer, firstChild);
+              }
+            }
+          };
+
+          // Update chips when filters change
+          state.renderActiveFilterChips = renderChips;
+          renderChips();
+        }
+
         function scheduleSearch(delay = 200) {
           if (searchDebounce) clearTimeout(searchDebounce);
           searchDebounce = setTimeout(() => {
@@ -2420,6 +3009,10 @@
           renderResultsList();
           updateResultCount();
           persistStateToUrl();
+
+          // Update mobile UI elements
+          if (state.updateFilterBadge) state.updateFilterBadge();
+          if (state.renderActiveFilterChips) state.renderActiveFilterChips();
 
           if (state.currentResults.length) {
             const idStr = String(state.selectedDocId || "");
@@ -2464,6 +3057,10 @@
           state.selectedDomain = null;
           renderKindsFilter();
           scheduleSearch();
+
+          // Update mobile UI elements
+          if (state.updateFilterBadge) state.updateFilterBadge();
+          if (state.renderActiveFilterChips) state.renderActiveFilterChips();
         }
 
         function restoreStateFromUrl() {
@@ -2565,7 +3162,15 @@
                toggleFilters();
              });
           }
-          window.addEventListener("resize", updateMobileLayout);
+
+          // Handle resize: update layout and re-initialize mobile enhancements if needed
+          window.addEventListener("resize", () => {
+            updateMobileLayout();
+            // If resizing to mobile and enhancements not yet initialized, initialize them
+            if (window.innerWidth < 768 && !mobileEnhancementsInitialized) {
+              setupMobileEnhancements();
+            }
+          });
         }
 
         async function loadAllData() {
@@ -2630,7 +3235,11 @@
           cacheElements();
           attachListeners();
           setLoading(true);
-          loadAllData().finally(() => setLoading(false));
+          loadAllData().finally(() => {
+            setLoading(false);
+            // Setup mobile enhancements after data is loaded
+            setupMobileEnhancements();
+          });
         }
 
         document.addEventListener("DOMContentLoaded", init);
