@@ -57,16 +57,13 @@ const INDEX_FULL_CONFIG = {
 };
 
 async function loadDeps() {
-  // Polyfill exports for UMD modules in worker context
-  self.exports = {};
-  self.module = { exports: self.exports };
+  // Polyfill exports to prevent ReferenceError in UMD modules
+  // DON'T polyfill module - we want UMD to fall through to setting globals
+  if (typeof exports === "undefined") {
+    self.exports = {};
+  }
 
   importScripts(FLEXSEARCH_URL, PAKO_URL, FFLATE_URL, SQL_JS_URL);
-
-  // Extract fflate from module.exports if needed
-  if (typeof fflate === "undefined" && self.module.exports && self.module.exports.brotliDecompress) {
-    self.fflate = self.module.exports;
-  }
 
   if (typeof FlexSearch === "undefined") throw new Error("FlexSearch failed to load");
   if (typeof pako === "undefined") throw new Error("pako failed to load");
