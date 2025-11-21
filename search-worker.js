@@ -107,6 +107,12 @@ async function loadDeps() {
         }
     }
   }
+
+  if (typeof pako === "undefined") {
+    if (self.module && self.module.exports && self.module.exports.inflate) {
+      self.pako = self.module.exports;
+    }
+  }
   
   if (typeof FlexSearch === "undefined") throw new Error("FlexSearch failed to load");
   if (typeof pako === "undefined") throw new Error("pako failed to load");
