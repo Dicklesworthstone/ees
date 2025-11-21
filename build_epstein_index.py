@@ -3,8 +3,9 @@ import json
 import pathlib
 import re
 import sqlite3
-import zlib
 from collections import Counter
+
+import brotli
 
 from datasets import load_dataset
 from email import policy
@@ -14,7 +15,8 @@ from dateutil import parser as dateparser
 
 
 DATA_DIR = pathlib.Path("data")
-DB_PATH = DATA_DIR / "epstein.sqlite"
+META_DB_PATH = DATA_DIR / "meta.sqlite"
+TEXT_PACK_PATH = DATA_DIR / "text.pack"
 
 MAX_CHARS_PER_CHUNK = 8000
 MAX_LINES_PER_CHUNK = 250
@@ -114,8 +116,10 @@ def chunk_text(text):
 
 def build():
     DATA_DIR.mkdir(exist_ok=True)
-    if DB_PATH.exists():
-        DB_PATH.unlink()
+    if META_DB_PATH.exists():
+        META_DB_PATH.unlink()
+    if TEXT_PACK_PATH.exists():
+        TEXT_PACK_PATH.unlink()
 
     print("Loading Epstein dataset...")
     ds = load_dataset("tensonaut/EPSTEIN_FILES_20K", split="train")
@@ -275,7 +279,7 @@ def build():
             msg["thread_id"] = tid
 
     # Build SQLite bundle
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(META_DB_PATH)
     conn.execute("PRAGMA journal_mode=OFF")
     conn.execute("PRAGMA synchronous=OFF")
     conn.execute("PRAGMA temp_store=MEMORY")
@@ -300,7 +304,9 @@ def build():
             date_key TEXT,
             thread_id TEXT,
             preview TEXT,
-            text_compressed BLOB,
+            text_offset INTEGER,
+            text_length INTEGER,
+            compression TEXT,
             text_bytes INTEGER
         )
         """
@@ -340,52 +346,61 @@ def build():
 
     doc_rows = []
     doc_id_seq = 0
-    for msg in messages:
-        chunks = chunk_text(msg["body_text"] or msg["raw_text"])
-        chunk_count = len(chunks)
-        for chunk_index, chunk_text_value in enumerate(chunks):
-            doc_id_seq += 1
-            preview = " ".join(chunk_text_value.split())
-            if len(preview) > 400:
-                preview = preview[:400]
-                last_space = preview.rfind(" ")
-                if last_space > 40:
-                    preview = preview[:last_space]
-                preview += "…"
+    text_offset = 0
+    with open(TEXT_PACK_PATH, "wb") as pack_f:
+        for msg in messages:
+            chunks = chunk_text(msg["body_text"] or msg["raw_text"])
+            chunk_count = len(chunks)
+            for chunk_index, chunk_text_value in enumerate(chunks):
+                doc_id_seq += 1
+                preview = " ".join(chunk_text_value.split())
+                if len(preview) > 400:
+                    preview = preview[:400]
+                    last_space = preview.rfind(" ")
+                    if last_space > 40:
+                        preview = preview[:last_space]
+                    preview += "…"
 
-            compressed = zlib.compress(chunk_text_value.encode("utf-8", "ignore"), level=9)
+                raw_bytes = chunk_text_value.encode("utf-8", "ignore")
+                compressed = brotli.compress(raw_bytes, quality=6)
+                pack_f.write(compressed)
+                start = text_offset
+                length = len(compressed)
+                text_offset += length
 
-            doc_rows.append(
-                (
-                    doc_id_seq,
-                    msg["message_id"],
-                    chunk_index,
-                    chunk_count,
-                    msg["filename"],
-                    msg["kind"],
-                    msg["subject"],
-                    msg["from_raw"],
-                    msg["to_raw"],
-                    msg["cc_raw"],
-                    msg["bcc_raw"],
-                    json.dumps(msg["participants"]),
-                    json.dumps(msg["domains"]),
-                    msg["date"],
-                    msg["date_key"],
-                    msg.get("thread_id"),
-                    preview,
-                    sqlite3.Binary(compressed),
-                    len(chunk_text_value.encode("utf-8", "ignore")),
+                doc_rows.append(
+                    (
+                        doc_id_seq,
+                        msg["message_id"],
+                        chunk_index,
+                        chunk_count,
+                        msg["filename"],
+                        msg["kind"],
+                        msg["subject"],
+                        msg["from_raw"],
+                        msg["to_raw"],
+                        msg["cc_raw"],
+                        msg["bcc_raw"],
+                        json.dumps(msg["participants"]),
+                        json.dumps(msg["domains"]),
+                        msg["date"],
+                        msg["date_key"],
+                        msg.get("thread_id"),
+                        preview,
+                        start,
+                        length,
+                        "br",
+                        len(raw_bytes),
+                    )
                 )
-            )
 
     conn.executemany(
         """
         INSERT INTO docs (
             id, message_id, chunk_index, chunk_count, filename, kind,
             subject, `from`, `to`, cc, bcc, participants, domains,
-            date, date_key, thread_id, preview, text_compressed, text_bytes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            date, date_key, thread_id, preview, text_offset, text_length, compression, text_bytes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         doc_rows,
     )
@@ -454,7 +469,7 @@ def build():
     conn.commit()
     conn.close()
 
-    print(f"Wrote {len(doc_rows)} chunks into {DB_PATH}")
+    print(f"Wrote {len(doc_rows)} chunks into {META_DB_PATH} and {TEXT_PACK_PATH}")
 
 
 if __name__ == "__main__":

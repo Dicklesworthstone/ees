@@ -78,8 +78,8 @@ npm install
 echo "Building Epstein email metadata, timeline, people, threads, neighbors..."
 uv run --python 3.13 build_epstein_index.py
 
-if [ ! -f "data/epstein.sqlite" ]; then
-  echo "build_epstein_index.py did not produce data/epstein.sqlite" >&2
+if [ ! -f "data/meta.sqlite" ] || [ ! -f "data/text.pack" ]; then
+  echo "build_epstein_index.py did not produce data/meta.sqlite and data/text.pack" >&2
   exit 1
 fi
 
@@ -92,7 +92,8 @@ mkdir -p "$BUILD_DIR/data"
 mkdir -p "$BUILD_DIR/vendor"
 
 cp epstein_emails_explorer.html "$BUILD_DIR/index.html"
-cp data/epstein.sqlite "$BUILD_DIR/data/epstein.sqlite"
+cp data/meta.sqlite "$BUILD_DIR/data/meta.sqlite"
+cp data/text.pack "$BUILD_DIR/data/text.pack"
 cp search-worker.js "$BUILD_DIR/search-worker.js"
 cp vendor/* "$BUILD_DIR/vendor/"
 touch "$BUILD_DIR/.nojekyll"

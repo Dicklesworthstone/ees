@@ -10,6 +10,7 @@ let activeIndex = null;
 let initPromise = null;
 let fullIndexPromise = null;
 let dbInstance = null;
+let textPack = null;
 const metaById = new Map();
 // Simple LRU cache for decompressed texts
 const textCache = new Map();
@@ -17,9 +18,11 @@ const TEXT_CACHE_LIMIT = 200;
 
 const FLEXSEARCH_URL = "vendor/flexsearch.bundle.min.js";
 const PAKO_URL = "vendor/pako.min.js";
+const FFLATE_URL = "vendor/fflate.min.js";
 const SQL_JS_VERSION = "1.11.0";
 const SQL_JS_URL = "vendor/sql-wasm.js";
-const SQLITE_PATH = "data/epstein.sqlite";
+const META_DB_PATH = "data/meta.sqlite";
+const TEXT_PACK_PATH = "data/text.pack";
 
 const INDEX_LITE_CONFIG = {
   document: {
@@ -54,9 +57,10 @@ const INDEX_FULL_CONFIG = {
 };
 
 async function loadDeps() {
-  importScripts(FLEXSEARCH_URL, PAKO_URL, SQL_JS_URL);
+  importScripts(FLEXSEARCH_URL, PAKO_URL, FFLATE_URL, SQL_JS_URL);
   if (typeof FlexSearch === "undefined") throw new Error("FlexSearch failed to load");
   if (typeof pako === "undefined") throw new Error("pako failed to load");
+  if (typeof fflate === "undefined") throw new Error("fflate failed to load");
   if (typeof initSqlJs !== "function") throw new Error("sql.js failed to load");
   const SQL = await initSqlJs({ locateFile: (file) => `vendor/${file}` });
   return SQL;
@@ -68,10 +72,12 @@ async function loadDatabase() {
   initPromise = (async () => {
     const SQL = await loadDeps();
 
-    const resp = await fetch(SQLITE_PATH);
-    if (!resp.ok) throw new Error(`Failed to fetch ${SQLITE_PATH}: ${resp.status}`);
-    const buffer = await resp.arrayBuffer();
-    const db = new SQL.Database(new Uint8Array(buffer));
+    const [metaResp, packResp] = await Promise.all([fetch(META_DB_PATH), fetch(TEXT_PACK_PATH)]);
+    if (!metaResp.ok) throw new Error(`Failed to fetch ${META_DB_PATH}: ${metaResp.status}`);
+    if (!packResp.ok) throw new Error(`Failed to fetch ${TEXT_PACK_PATH}: ${packResp.status}`);
+    const [metaBuf, packBuf] = await Promise.all([metaResp.arrayBuffer(), packResp.arrayBuffer()]);
+    textPack = packBuf;
+    const db = new SQL.Database(new Uint8Array(metaBuf));
     dbInstance = db;
 
     const meta = [];
@@ -209,14 +215,23 @@ async function getTextById(id) {
   }
   if (!dbInstance) throw new Error("DB not loaded");
 
-  const stmt = dbInstance.prepare("SELECT text_compressed FROM docs WHERE id = ?");
+  if (!textPack) throw new Error("Text pack not loaded");
+  const stmt = dbInstance.prepare("SELECT text_offset, text_length, compression FROM docs WHERE id = ?");
   stmt.bind([id]);
   let text = "";
   if (stmt.step()) {
     const row = stmt.getAsObject();
-    const compressed = row.text_compressed;
-    if (compressed) {
-      text = new TextDecoder().decode(pako.inflate(new Uint8Array(compressed)));
+    const offset = row.text_offset;
+    const length = row.text_length;
+    const compression = row.compression || "br";
+    if (offset != null && length != null) {
+      const slice = new Uint8Array(textPack, offset, length);
+      if (compression === "br") {
+        const inflated = fflate.brotliDecompress(slice);
+        text = new TextDecoder().decode(inflated);
+      } else {
+        text = new TextDecoder().decode(pako.inflate(slice));
+      }
     }
   }
   stmt.free();
@@ -227,11 +242,23 @@ async function getTextById(id) {
 
 async function buildFullIndex(db, decoder, meta) {
   indexFull = new FlexSearch.Document(INDEX_FULL_CONFIG);
-  const stmt = db.prepare("SELECT id, text_compressed FROM docs ORDER BY id");
+  const stmt = db.prepare("SELECT id, text_offset, text_length, compression FROM docs ORDER BY id");
   let count = 0;
   while (stmt.step()) {
     const row = stmt.getAsObject();
-    const text = decoder.decode(pako.inflate(new Uint8Array(row.text_compressed)));
+    const offset = row.text_offset;
+    const length = row.text_length;
+    const compression = row.compression || "br";
+    let text = "";
+    if (offset != null && length != null) {
+      const slice = new Uint8Array(textPack, offset, length);
+      if (compression === "br") {
+        const inflated = fflate.brotliDecompress(slice);
+        text = decoder.decode(inflated);
+      } else {
+        text = decoder.decode(pako.inflate(slice));
+      }
+    }
     const docMeta = metaById.get(row.id);
     if (docMeta) {
       indexFull.add({ ...docMeta, text });

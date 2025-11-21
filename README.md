@@ -50,12 +50,13 @@ Welcome to **EES** — the premier way to explore Epstein's sick world, as encap
 graph TB
     A[User Browser] -->|Loads| B[index.html]
     B -->|Spawns| C[Web Worker]
-    C -->|Fetches| D[epstein.sqlite<br/>~69 MB]
+    C -->|Fetches| D[meta.sqlite<br/>hot meta]
+    C -->|Fetches| J[text.pack<br/>compressed bodies]
     C -->|Loads| E[sql.js<br/>SQLite WASM]
-    C -->|Loads| F[pako<br/>Decompression]
-    C -->|Builds| G[FlexSearch Index]
-    D -->|Decompress| F
+    C -->|Loads| F[pako + fflate<br/>Decompression]
+    C -->|Builds| G[FlexSearch Index (lite→full)]
     D -->|Query| E
+    J -->|Decompress on demand| F
     E -->|Results| G
     G -->|Search Results| C
     C -->|Streams| B
@@ -82,17 +83,17 @@ graph TB
 
 | Component | Technology | Purpose |
 |-----------|-----------|---------|
-| **Database** | SQLite (sql.js) | Single-file datastore (~69 MB) with meta, timeline, people, threads, text chunks |
+| **Database** | SQLite (sql.js) | `meta.sqlite` (hot meta: docs, timeline, people, threads) |
+| **Text Pack** | Custom brotli pack | `text.pack` with compressed bodies, fetched once and read by offset |
 | **Search Engine** | FlexSearch | Fast, client-side full-text search with fielded queries |
-| **Compression** | pako (gzip) | Efficient data compression for faster downloads |
+| **Compression** | pako + fflate (brotli) | Fast decompression of body text on demand |
 | **Worker** | Web Worker API | Background processing to keep UI responsive |
 | **UI Framework** | Vanilla JS | Zero-dependency, lightweight interface |
 
-### Key Features
-- **Single-file datastore**: `data/epstein.sqlite` (~69 MB) holds meta, timeline, people, threads, and compressed text chunks in one bundle.
+- **Hot/cold split**: `meta.sqlite` (small, fast) + `text.pack` (compressed brotli blobs by offset) keep first render light.
 - **Lite-first indexing**: The worker instantly builds a lite index (subject/from/to/preview/domains) so search is usable immediately; a full-text index builds silently in the background and swaps in when ready.
-- **On-demand text**: Body text stays compressed in SQLite; the worker inflates only what you open, with an LRU cache for repeat reads.
-- **All in the worker**: `search-worker.js` runs SQLite via sql.js, pako for decompression, and FlexSearch for relevance — zero server calls, zero telemetry.
+- **On-demand text**: Body text stays in `text.pack`; the worker inflates only what you open, with an LRU cache for repeat reads.
+- **All in the worker**: `search-worker.js` runs SQLite via sql.js, pako/fflate, and FlexSearch — zero server calls, zero telemetry.
 - **Fielded search DSL**: `subject:`, `from:`, `to:`, `body:`, boolean `AND/OR/NOT`, and date ranges like `date:[2001-01-01 TO 2005-12-31]` — precision sleuthing by default.
 - **People & threads**: Reconstructed threads, co-participant stats, domains, and quick “view whole thread” actions right in the UI.
 - **Timeline at a glance**: Mini histogram to timebox your hunts without leaving the pane.

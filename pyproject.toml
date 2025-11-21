@@ -9,6 +9,7 @@ dependencies = [
     "python-dateutil>=2.9.0",
     "scikit-learn>=1.4.0",
     "sentence-transformers>=2.7.0",
+    "Brotli>=1.1.0",
 ]
 
 [tool.uv]
