@@ -16,6 +16,10 @@ const metaById = new Map();
 const textCache = new Map();
 const TEXT_CACHE_LIMIT = 200;
 
+// Shim CommonJS globals for UMD bundles in worker scope
+var module = { exports: {} };
+var exports = module.exports;
+
 const FLEXSEARCH_URL = "vendor/flexsearch.bundle.min.js";
 const PAKO_URL = "vendor/pako.min.js";
 const FFLATE_URL = "vendor/fflate.min.js";
@@ -64,12 +68,12 @@ async function loadDeps() {
     throw new Error(`Failed to load base libraries: ${err.message}`);
   }
 
-  // Now polyfill exports ONLY for fflate which needs it internally
+  // Now polyfill exports AND module for fflate
   if (typeof exports === "undefined") {
     self.exports = {};
   }
   if (typeof module === "undefined") {
-    self.module = {};
+    self.module = { exports: self.exports };
   }
 
   try {
@@ -79,8 +83,19 @@ async function loadDeps() {
   }
 
   // Extract fflate from module.exports if UMD took that path
-  if (typeof fflate === "undefined" && self.module && self.module.exports) {
-    self.fflate = self.module.exports;
+  if (typeof fflate === "undefined") {
+    if (self.module && self.module.exports) {
+      // Check what we actually got
+      if (typeof self.module.exports.brotliDecompress === 'function') {
+        self.fflate = self.module.exports;
+      } else {
+        // Maybe it's wrapped in default export
+        const keys = Object.keys(self.module.exports);
+        throw new Error(`fflate loaded but brotliDecompress not found. module.exports keys: ${keys.join(', ')}`);
+      }
+    } else {
+      throw new Error(`fflate global not set and module.exports is ${typeof self.module?.exports}`);
+    }
   }
 
   if (typeof FlexSearch === "undefined") throw new Error("FlexSearch failed to load");
