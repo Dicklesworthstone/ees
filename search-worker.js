@@ -62,60 +62,59 @@ const INDEX_FULL_CONFIG = {
 };
 
 async function loadDeps() {
-  // Load scripts WITHOUT any polyfills first to see what happens naturally
+  // Polyfill CommonJS module/exports environment for UMD bundles
+  // We must capture and reset module.exports after EACH script to prevent overwriting.
+  
+  // 1. Initialize module/exports
+  self.module = { exports: {} };
+  self.exports = self.module.exports;
+
+  // 2. Load FlexSearch
   try {
-    importScripts(FLEXSEARCH_URL, PAKO_URL, SQL_JS_URL);
+    importScripts(FLEXSEARCH_URL);
+    // If FlexSearch attached to module.exports, capture it.
+    // If it attached to global self.FlexSearch, use that.
+    if (self.module.exports && (self.module.exports.Document || self.module.exports.Index || self.module.exports.Worker)) {
+      self.FlexSearch = self.module.exports;
+    }
   } catch (err) {
-    throw new Error(`Failed to load base libraries: ${err.message}`);
+    throw new Error(`Failed to load FlexSearch: ${err.message}`);
   }
 
-  // Polyfill module/exports with synchronization for fflate UMD
-  if (typeof exports === "undefined") {
-    self.exports = {};
-  }
-  if (typeof module === "undefined") {
-    // Create module with getter/setter to keep exports synchronized
-    self.module = {};
-    Object.defineProperty(self.module, 'exports', {
-      get() { return self.exports; },
-      set(v) { self.exports = v; },
-      configurable: true
-    });
+  // 3. Reset module.exports for next library
+  self.module.exports = {};
+  self.exports = self.module.exports;
+
+  // 4. Load Pako
+  try {
+    importScripts(PAKO_URL);
+    if (self.module.exports && self.module.exports.inflate) {
+      self.pako = self.module.exports;
+    }
+  } catch (err) {
+    throw new Error(`Failed to load pako: ${err.message}`);
   }
 
+  // 5. Reset module.exports for next library
+  self.module.exports = {};
+  self.exports = self.module.exports;
+
+  // 6. Load fflate
   try {
     importScripts(FFLATE_URL);
+    // fflate usually exports multiple functions
+    if (self.module.exports && Object.keys(self.module.exports).length > 0) {
+      self.fflate = self.module.exports;
+    }
   } catch (err) {
     throw new Error(`Failed to load fflate: ${err.message}`);
   }
 
-  // Extract fflate from module.exports if UMD took that path
-  if (typeof fflate === "undefined") {
-    if (self.module && self.module.exports) {
-      // Just use whatever exports we got, assuming zlib/deflate support is present
-      self.fflate = self.module.exports;
-    } else {
-      throw new Error(`fflate global not set and module.exports is ${typeof self.module?.exports}`);
-    }
-  }
-
-  if (typeof FlexSearch === "undefined") {
-    // FlexSearch can also attach to module.exports
-    if (self.module && self.module.exports) {
-        if (self.module.exports.Document) { // Heuristic to check if it's FlexSearch
-             self.FlexSearch = self.module.exports;
-        }
-    }
-  }
-
-  if (typeof pako === "undefined") {
-    if (self.module && self.module.exports && self.module.exports.inflate) {
-      self.pako = self.module.exports;
-    }
-  }
+  // Final verification
+  if (typeof FlexSearch === "undefined") throw new Error("FlexSearch not found after load");
+  if (typeof pako === "undefined") throw new Error("pako not found after load");
+  // fflate is optional now that we use pako for zlib, but good to have
   
-  if (typeof FlexSearch === "undefined") throw new Error("FlexSearch failed to load");
-  if (typeof pako === "undefined") throw new Error("pako failed to load");
   if (typeof initSqlJs !== "function") throw new Error("sql.js failed to load");
   const SQL = await initSqlJs({ locateFile: (file) => `vendor/${file}` });
   return SQL;
