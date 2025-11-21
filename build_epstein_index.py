@@ -5,7 +5,7 @@ import re
 import sqlite3
 from collections import Counter
 import random
-import brotli
+import zlib
 
 from datasets import load_dataset, logging as ds_logging
 from email import policy
@@ -501,7 +501,7 @@ def build():
                     preview += "…"
 
                 raw_bytes = chunk_text_value.encode("utf-8", "ignore")
-                compressed = brotli.compress(raw_bytes, quality=6)
+                compressed = zlib.compress(raw_bytes, level=9)
                 pack_f.write(compressed)
                 start = text_offset
                 length = len(compressed)
@@ -528,7 +528,7 @@ def build():
                         preview,
                         start,
                         length,
-                        "br",
+                        "zlib",
                         len(raw_bytes),
                     )
                 )

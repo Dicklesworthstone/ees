@@ -92,14 +92,8 @@ async function loadDeps() {
   // Extract fflate from module.exports if UMD took that path
   if (typeof fflate === "undefined") {
     if (self.module && self.module.exports) {
-      // Check what we actually got
-      if (typeof self.module.exports.brotliDecompress === 'function') {
-        self.fflate = self.module.exports;
-      } else {
-        // Maybe it's wrapped in default export
-        const keys = Object.keys(self.module.exports);
-        throw new Error(`fflate loaded but brotliDecompress not found. module.exports keys: ${keys.join(', ')}`);
-      }
+      // Just use whatever exports we got, assuming zlib/deflate support is present
+      self.fflate = self.module.exports;
     } else {
       throw new Error(`fflate global not set and module.exports is ${typeof self.module?.exports}`);
     }
@@ -299,11 +293,18 @@ async function getTextById(id) {
     const compression = row.compression || "br";
     if (offset !== null && offset !== undefined && length !== null && length !== undefined) {
       const slice = new Uint8Array(textPack, offset, length);
-      if (compression === "br") {
-        const inflated = fflate.brotliDecompress(slice);
-        text = new TextDecoder().decode(inflated);
-      } else {
-        text = new TextDecoder().decode(pako.inflate(slice));
+      // Handle zlib (defaulting to pako for robustness)
+      // We could use fflate.unzlibSync(slice) for speed if available, but pako is safe.
+      try {
+          text = new TextDecoder().decode(pako.inflate(slice));
+      } catch (e) {
+          // Fallback for legacy 'br' if somehow present, though we rebuilt data
+          if (compression === 'br' && self.fflate && self.fflate.brotliDecompress) {
+             const inflated = self.fflate.brotliDecompress(slice);
+             text = new TextDecoder().decode(inflated);
+          } else {
+             throw e;
+          }
       }
     }
   }
@@ -325,11 +326,13 @@ async function buildFullIndex(db, decoder, meta) {
     let text = "";
     if (offset !== null && offset !== undefined && length !== null && length !== undefined) {
       const slice = new Uint8Array(textPack, offset, length);
-      if (compression === "br") {
-        const inflated = fflate.brotliDecompress(slice);
-        text = decoder.decode(inflated);
-      } else {
+      try {
         text = decoder.decode(pako.inflate(slice));
+      } catch (e) {
+         if (compression === 'br' && self.fflate && self.fflate.brotliDecompress) {
+             const inflated = self.fflate.brotliDecompress(slice);
+             text = decoder.decode(inflated);
+         }
       }
     }
     const docMeta = metaById.get(row.id);
