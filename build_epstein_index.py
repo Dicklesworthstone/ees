@@ -164,6 +164,28 @@ def normalize_body(text):
     return cleaned.strip()
 
 
+def sanitize_noisy_text(text):
+    """If a chunk is dominated by non-word noise, try to soften it."""
+    if not text:
+        return text
+    alpha = sum(c.isalpha() for c in text)
+    nonword = sum(1 for c in text if not c.isalpha() and not c.isspace())
+    if alpha == 0:
+        return text
+    # If more than 60% of non-space chars are non-letters, try cleanup
+    density = nonword / max(1, (len(text) - text.count(" ")))
+    if density < 0.6:
+        return text
+    # Remove long runs of non-word chars, uppercase collapse
+    softened = re.sub(r"[^\w\s]{2,}", " ", text)
+    softened = re.sub(r"\s+", " ", softened)
+    # If still ugly, bail out to original
+    alpha2 = sum(c.isalpha() for c in softened)
+    if alpha2 < alpha * 0.5:
+        return text
+    return softened.strip()
+
+
 def chunk_text(text):
     lines = text.splitlines()
     chunks = []
@@ -232,7 +254,7 @@ def build():
             kind = filename.split("_", 1)[0] or "OTHER"
 
         header_text, body_text = split_header_body(raw_text)
-        body_text = normalize_body(body_text or "")
+        body_text = sanitize_noisy_text(normalize_body(body_text or ""))
         hdr = parse_headers(header_text)
         subject_raw = extract_subject(header_text, body_text)
         subject = normalize_subject(subject_raw) or filename
