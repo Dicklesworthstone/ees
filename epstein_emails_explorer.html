@@ -186,7 +186,7 @@
       }
 
       @keyframes shimmer {
-        0%, 100% { left: -100%; opacity: 0; }
+        0% { left: -100%; opacity: 0; }
         40% { opacity: 1; }
         60% { opacity: 1; }
         100% { left: 150%; opacity: 0; }
@@ -205,7 +205,7 @@
       .card-hover::before {
         content: '';
         position: absolute;
-        inset: -1px;
+        inset: 0;
         border-radius: inherit;
         background: linear-gradient(135deg,
           var(--accent-glow) 0%,
