@@ -89,9 +89,11 @@ graph TB
 | **UI Framework** | Vanilla JS | Zero-dependency, lightweight interface |
 
 ### Key Features
-- **Single-file datastore**: `data/epstein.sqlite` (~69 MB) ships everything (meta, timeline, people, threads, text chunks) in one efficient bundle.
-- **All in the worker**: `search-worker.js` loads SQLite via sql.js, decompresses with pako, builds a FlexSearch index, and streams text on demand — no server calls, no tracking beacons.
-- **Fielded search DSL**: `subject:`, `from:`, `to:`, `body:`, boolean `AND/OR/NOT`, and date ranges like `date:[2001-01-01 TO 2005-12-31]` — exactly what you need for precision sleuthing.
+- **Single-file datastore**: `data/epstein.sqlite` (~69 MB) holds meta, timeline, people, threads, and compressed text chunks in one bundle.
+- **Lite-first indexing**: The worker instantly builds a lite index (subject/from/to/preview/domains) so search is usable immediately; a full-text index builds silently in the background and swaps in when ready.
+- **On-demand text**: Body text stays compressed in SQLite; the worker inflates only what you open, with an LRU cache for repeat reads.
+- **All in the worker**: `search-worker.js` runs SQLite via sql.js, pako for decompression, and FlexSearch for relevance — zero server calls, zero telemetry.
+- **Fielded search DSL**: `subject:`, `from:`, `to:`, `body:`, boolean `AND/OR/NOT`, and date ranges like `date:[2001-01-01 TO 2005-12-31]` — precision sleuthing by default.
 - **People & threads**: Reconstructed threads, co-participant stats, domains, and quick “view whole thread” actions right in the UI.
 - **Timeline at a glance**: Mini histogram to timebox your hunts without leaving the pane.
 
