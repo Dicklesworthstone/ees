@@ -1978,12 +1978,21 @@
             btn.style.animationDelay = `${index * 30}ms`;
             const subjectText = td.subject || "(No subject)";
             const datePart = td.date_key || "";
-            btn.innerHTML = `
-              <div class="flex items-center gap-2">
-                ${isActive ? '<span class="text-emerald-400">▸</span>' : '<span class="text-slate-600">•</span>'}
-                <span class="truncate">${datePart} • ${subjectText}</span>
-              </div>
-            `;
+
+            const wrapper = document.createElement("div");
+            wrapper.className = "flex items-center gap-2";
+
+            const indicator = document.createElement("span");
+            indicator.className = isActive ? "text-emerald-400" : "text-slate-600";
+            indicator.textContent = isActive ? "▸" : "•";
+            wrapper.appendChild(indicator);
+
+            const text = document.createElement("span");
+            text.className = "truncate";
+            text.textContent = `${datePart} • ${subjectText}`;
+            wrapper.appendChild(text);
+
+            btn.appendChild(wrapper);
             btn.addEventListener("click", () => selectDoc(td.id));
             listEl.appendChild(btn);
           });
