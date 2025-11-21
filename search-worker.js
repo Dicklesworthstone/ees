@@ -57,13 +57,31 @@ const INDEX_FULL_CONFIG = {
 };
 
 async function loadDeps() {
-  // Polyfill exports to prevent ReferenceError in UMD modules
-  // DON'T polyfill module - we want UMD to fall through to setting globals
+  // Load scripts WITHOUT any polyfills first to see what happens naturally
+  try {
+    importScripts(FLEXSEARCH_URL, PAKO_URL, SQL_JS_URL);
+  } catch (err) {
+    throw new Error(`Failed to load base libraries: ${err.message}`);
+  }
+
+  // Now polyfill exports ONLY for fflate which needs it internally
   if (typeof exports === "undefined") {
     self.exports = {};
   }
+  if (typeof module === "undefined") {
+    self.module = {};
+  }
 
-  importScripts(FLEXSEARCH_URL, PAKO_URL, FFLATE_URL, SQL_JS_URL);
+  try {
+    importScripts(FFLATE_URL);
+  } catch (err) {
+    throw new Error(`Failed to load fflate: ${err.message}`);
+  }
+
+  // Extract fflate from module.exports if UMD took that path
+  if (typeof fflate === "undefined" && self.module && self.module.exports) {
+    self.fflate = self.module.exports;
+  }
 
   if (typeof FlexSearch === "undefined") throw new Error("FlexSearch failed to load");
   if (typeof pako === "undefined") throw new Error("pako failed to load");
