@@ -99,9 +99,17 @@ async function loadDeps() {
     }
   }
 
+  if (typeof FlexSearch === "undefined") {
+    // FlexSearch can also attach to module.exports
+    if (self.module && self.module.exports) {
+        if (self.module.exports.Document) { // Heuristic to check if it's FlexSearch
+             self.FlexSearch = self.module.exports;
+        }
+    }
+  }
+  
   if (typeof FlexSearch === "undefined") throw new Error("FlexSearch failed to load");
   if (typeof pako === "undefined") throw new Error("pako failed to load");
-  if (typeof fflate === "undefined") throw new Error("fflate failed to load");
   if (typeof initSqlJs !== "function") throw new Error("sql.js failed to load");
   const SQL = await initSqlJs({ locateFile: (file) => `vendor/${file}` });
   return SQL;
