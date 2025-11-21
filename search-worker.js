@@ -17,7 +17,101 @@ const metaById = new Map();
 const textCache = new Map();
 const TEXT_CACHE_LIMIT = 200;
 
-// ... (imports and config remain the same) ...
+// Shim CommonJS globals for UMD bundles in worker scope
+var module = { exports: {} };
+var exports = module.exports;
+
+const FLEXSEARCH_URL = "vendor/flexsearch.bundle.min.js";
+const PAKO_URL = "vendor/pako.min.js";
+const FFLATE_URL = "vendor/fflate.min.js";
+const SQL_JS_VERSION = "1.11.0";
+const SQL_JS_URL = "vendor/sql-wasm.js";
+const META_DB_PATH = "data/meta.sqlite";
+const TEXT_PACK_PATH = "data/text.pack";
+
+const INDEX_LITE_CONFIG = {
+  document: {
+    id: "id",
+    index: [
+      { field: "subject", tokenize: "forward" },
+      { field: "from", tokenize: "forward" },
+      { field: "to", tokenize: "forward" },
+      { field: "preview", tokenize: "forward" },
+      { field: "domains", tokenize: "forward" }
+    ],
+    store: ["id", "filename", "kind", "from", "to", "subject", "date", "preview"]
+  },
+  tokenize: "forward",
+  context: false
+};
+
+const INDEX_FULL_CONFIG = {
+  document: {
+    id: "id",
+    index: [
+      { field: "subject", tokenize: "forward" },
+      { field: "from", tokenize: "forward" },
+      { field: "to", tokenize: "forward" },
+      { field: "text", tokenize: "forward" },
+      { field: "domains", tokenize: "forward" }
+    ],
+    store: ["id", "filename", "kind", "from", "to", "subject", "date", "preview"]
+  },
+  tokenize: "forward",
+  context: true
+};
+
+async function loadDeps() {
+  // Load scripts WITHOUT any polyfills first to see what happens naturally
+  try {
+    importScripts(FLEXSEARCH_URL, PAKO_URL, SQL_JS_URL);
+  } catch (err) {
+    throw new Error(`Failed to load base libraries: ${err.message}`);
+  }
+
+  // Polyfill module/exports with synchronization for fflate UMD
+  if (typeof exports === "undefined") {
+    self.exports = {};
+  }
+  if (typeof module === "undefined") {
+    // Create module with getter/setter to keep exports synchronized
+    self.module = {};
+    Object.defineProperty(self.module, 'exports', {
+      get() { return self.exports; },
+      set(v) { self.exports = v; },
+      configurable: true
+    });
+  }
+
+  try {
+    importScripts(FFLATE_URL);
+  } catch (err) {
+    throw new Error(`Failed to load fflate: ${err.message}`);
+  }
+
+  // Extract fflate from module.exports if UMD took that path
+  if (typeof fflate === "undefined") {
+    if (self.module && self.module.exports) {
+      // Check what we actually got
+      if (typeof self.module.exports.brotliDecompress === 'function') {
+        self.fflate = self.module.exports;
+      } else {
+        // Maybe it's wrapped in default export
+        const keys = Object.keys(self.module.exports);
+        throw new Error(`fflate loaded but brotliDecompress not found. module.exports keys: ${keys.join(', ')}`);
+      }
+    } else {
+      throw new Error(`fflate global not set and module.exports is ${typeof self.module?.exports}`);
+    }
+  }
+
+  if (typeof FlexSearch === "undefined") throw new Error("FlexSearch failed to load");
+  if (typeof pako === "undefined") throw new Error("pako failed to load");
+  if (typeof fflate === "undefined") throw new Error("fflate failed to load");
+  if (typeof initSqlJs !== "function") throw new Error("sql.js failed to load");
+  const SQL = await initSqlJs({ locateFile: (file) => `vendor/${file}` });
+  return SQL;
+}
 
 async function loadDatabase() {
   if (initPromise) return initPromise;
@@ -56,7 +150,7 @@ async function loadDatabase() {
     dbInstance = db;
 
     const meta = [];
-    // ... (rest of the metadata extraction logic remains the same) ...
+    const decoder = new TextDecoder();
 
     const stmt = db.prepare(`
       SELECT id, message_id, chunk_index, chunk_count, filename, kind,
@@ -154,7 +248,19 @@ async function loadDatabase() {
   return initPromise;
 }
 
-// ... (searchBasic remains the same) ...
+function searchBasic(query, limit = 400, field = null) {
+  const q = (query || "").trim();
+  if (!q || !activeIndex) return docsMeta.map((d) => d.id).slice(0, limit);
+  const res = activeIndex.search({ query: q, enrich: true, limit, index: field || undefined });
+  const items = {};
+  res.forEach((block) => {
+    block.result.forEach((r) => {
+      const idVal = typeof r === "object" && r !== null ? r.id : r;
+      if (idVal !== undefined && idVal !== null) items[idVal] = true;
+    });
+  });
+  return Object.keys(items).map((x) => parseInt(x, 10));
+}
 
 function pruneTextCache() {
   while (textCache.size > TEXT_CACHE_LIMIT) {
