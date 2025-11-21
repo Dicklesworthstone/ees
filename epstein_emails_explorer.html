@@ -262,19 +262,22 @@
         transform: translateY(-1px);
       }
 
-      /* Skeleton loading animation */
+      /* Refined skeleton loading with shimmer */
       @keyframes skeleton-pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
       }
 
       .skeleton {
-        background: linear-gradient(90deg,
-          rgba(255, 255, 255, 0.05) 25%,
-          rgba(255, 255, 255, 0.1) 50%,
-          rgba(255, 255, 255, 0.05) 75%);
+        background: linear-gradient(110deg,
+          rgba(255, 255, 255, 0.04) 0%,
+          rgba(255, 255, 255, 0.04) 40%,
+          rgba(255, 255, 255, 0.12) 50%,
+          rgba(255, 255, 255, 0.04) 60%,
+          rgba(255, 255, 255, 0.04) 100%);
         background-size: 200% 100%;
-        animation: skeleton-shimmer 1.5s infinite;
+        animation: skeleton-shimmer 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        border-radius: var(--radius-md);
       }
 
       @keyframes skeleton-shimmer {
@@ -287,41 +290,52 @@
         scroll-behavior: smooth;
       }
 
-      /* Custom scrollbar */
+      /* Premium custom scrollbar */
       ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+        width: 10px;
+        height: 10px;
       }
 
       ::-webkit-scrollbar-track {
-        background: rgba(0, 0, 0, 0.2);
-        border-radius: 4px;
+        background: transparent;
+        margin: 2px;
       }
 
       ::-webkit-scrollbar-thumb {
-        background: rgba(124, 240, 197, 0.3);
-        border-radius: 4px;
-        transition: background var(--transition-fast);
+        background: rgba(52, 211, 153, 0.2);
+        border-radius: var(--radius-full);
+        border: 2px solid transparent;
+        background-clip: padding-box;
+        transition: all var(--transition-base);
       }
 
       ::-webkit-scrollbar-thumb:hover {
-        background: rgba(124, 240, 197, 0.5);
+        background: rgba(52, 211, 153, 0.35);
+        border-width: 1px;
       }
 
-      /* Fade-in animation for content */
+      ::-webkit-scrollbar-thumb:active {
+        background: rgba(52, 211, 153, 0.5);
+      }
+
+      ::-webkit-scrollbar-corner {
+        background: transparent;
+      }
+
+      /* Refined fade-in with scale */
       @keyframes fadeIn {
         from {
           opacity: 0;
-          transform: translateY(8px);
+          transform: translateY(12px) scale(0.98);
         }
         to {
           opacity: 1;
-          transform: translateY(0);
+          transform: translateY(0) scale(1);
         }
       }
 
       .fade-in {
-        animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        animation: fadeIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
       }
 
       /* Loading spinner enhancement */
@@ -333,30 +347,65 @@
         animation: spin 0.8s linear infinite;
       }
 
-      /* Button enhancements */
+      /* Premium button enhancements */
       button {
         cursor: pointer;
         user-select: none;
         -webkit-tap-highlight-color: transparent;
+        font-weight: 500;
+        letter-spacing: -0.006em;
+        position: relative;
+        overflow: hidden;
+      }
+
+      button::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity var(--transition-fast);
+        pointer-events: none;
+      }
+
+      button:hover::after {
+        opacity: 1;
       }
 
       button:disabled {
         cursor: not-allowed;
-        opacity: 0.5;
+        opacity: 0.4;
+        filter: grayscale(0.5);
       }
 
       button:not(:disabled):active {
-        transform: scale(0.98);
+        transform: scale(0.97);
+        transition: transform 80ms cubic-bezier(0.34, 1.56, 0.64, 1);
       }
 
-      /* Input enhancements */
-      input::placeholder {
+      /* Premium input enhancements */
+      input,
+      textarea,
+      select {
+        transition: all var(--transition-base);
+      }
+
+      input::placeholder,
+      textarea::placeholder {
         color: var(--text-muted);
-        opacity: 0.7;
+        opacity: 0.6;
+        transition: opacity var(--transition-fast);
       }
 
-      input:focus::placeholder {
-        opacity: 0.5;
+      input:focus::placeholder,
+      textarea:focus::placeholder {
+        opacity: 0.4;
+      }
+
+      input:hover:not(:focus),
+      textarea:hover:not(:focus),
+      select:hover:not(:focus) {
+        border-color: var(--border-hover);
       }
 
       /* Line clamp utility */
@@ -727,16 +776,31 @@
     </style>
   </head>
   <body class="text-slate-100">
-    <div id="loading-overlay" class="fixed inset-0 z-50 hidden flex items-center justify-center backdrop-blur-md bg-black/70 transition-opacity duration-300">
-      <div class="text-center space-y-6 fade-in">
-        <div class="relative w-20 h-20 mx-auto">
-          <div class="absolute inset-0 rounded-full border-4 border-emerald-300/20"></div>
-          <div class="absolute inset-0 rounded-full border-4 border-emerald-300 border-t-transparent animate-spin"></div>
-          <div class="absolute inset-2 rounded-full bg-gradient-to-br from-emerald-400/20 to-blue-500/20 animate-pulse"></div>
+    <div id="loading-overlay" class="fixed inset-0 z-50 hidden flex items-center justify-center backdrop-blur-xl bg-black/80 transition-all duration-500">
+      <div class="text-center space-y-8 fade-in px-6">
+        <div class="relative w-24 h-24 mx-auto">
+          <!-- Outer glow ring -->
+          <div class="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-400/30 to-blue-500/30 blur-xl animate-pulse"></div>
+          <!-- Background circle -->
+          <div class="absolute inset-0 rounded-full border-[3px] border-white/10"></div>
+          <!-- Animated gradient spinner -->
+          <div class="absolute inset-0 rounded-full border-[3px] border-transparent bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-500 animate-spin" style="mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #fff 0); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #fff 0);"></div>
+          <!-- Inner glow -->
+          <div class="absolute inset-3 rounded-full bg-gradient-to-br from-emerald-400/25 to-blue-500/25 animate-pulse"></div>
+          <!-- Center dot -->
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="w-2 h-2 rounded-full bg-gradient-to-br from-emerald-400 to-blue-500"></div>
+          </div>
         </div>
-        <div class="space-y-2">
-          <p class="text-base font-medium text-slate-100">Preparing workspace</p>
-          <p class="text-sm text-slate-400">Loading 20k+ documents for instant search...</p>
+        <div class="space-y-3">
+          <h3 class="text-lg font-semibold text-white tracking-tight">Preparing workspace</h3>
+          <p class="text-sm text-slate-300/80 leading-relaxed max-w-xs mx-auto">Indexing 20,000+ documents<br/>for instant full-text search...</p>
+          <!-- Progress indicator -->
+          <div class="flex justify-center gap-1.5 pt-2">
+            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style="animation-delay: 0ms;"></div>
+            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style="animation-delay: 150ms;"></div>
+            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style="animation-delay: 300ms;"></div>
+          </div>
         </div>
       </div>
     </div>
