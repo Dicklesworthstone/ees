@@ -213,7 +213,6 @@
         opacity: 0;
         transition: opacity var(--transition-smooth);
         pointer-events: none;
-        z-index: -1;
       }
 
       .card-hover:hover {
@@ -458,19 +457,10 @@
           overflow-x: hidden;
         }
 
-        /* Increase touch targets with visual feedback */
+        /* Increase touch targets */
         button {
           min-height: 44px;
           position: relative;
-        }
-
-        button:active::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background: rgba(255, 255, 255, 0.1);
-          border-radius: inherit;
-          pointer-events: none;
         }
 
         /* Mode toggle buttons - larger for easier tapping */

@@ -4,7 +4,7 @@ import pathlib
 import re
 import sqlite3
 from collections import Counter
-
+import random
 import brotli
 
 from datasets import load_dataset
@@ -46,11 +46,42 @@ def parse_headers(header_text):
     return meta
 
 
+def extract_subject(header_text, body_text):
+    # Try parsed header first
+    parsed = parse_headers(header_text)
+    subj = parsed.get("subject")
+
+    # Fallback: regex scan header block
+    if not subj:
+        m = re.search(r"^subject:\\s*(.+)$", header_text, flags=re.IGNORECASE | re.MULTILINE)
+        if m:
+            subj = m.group(1).strip()
+
+    # Fallback: first non-empty line that looks like subject
+    if not subj:
+        for line in (header_text + "\\n" + body_text).splitlines():
+            line = line.strip()
+            if not line:
+                continue
+            if line.lower().startswith("subject:"):
+                subj = line.split(":", 1)[1].strip()
+                break
+            # heuristic: short line with words and no colon in first 80 chars
+            if len(line) <= 120 and ":" not in line[:60]:
+                subj = line.strip()
+                break
+
+    if subj:
+        subj = subj.strip()
+        subj = re.sub(r"\\s+", " ", subj)
+    return subj or None
+
+
 def normalize_subject(subj):
     if not subj:
         return None
     s = subj.strip()
-    s_clean = re.sub(r"^\s*(re|fw|fwd)\s*:\s*", "", s, flags=re.IGNORECASE)
+    s_clean = re.sub(r"^\\s*(re|fw|fwd)\\s*:\\s*", "", s, flags=re.IGNORECASE)
     if not s_clean:
         s_clean = s
     return s_clean
@@ -84,6 +115,53 @@ def extract_addresses(value):
         addr_lower = addr.lower()
         addrs.append((name or None, addr_lower))
     return addrs
+
+
+def normalize_body(text):
+    # Normalize newlines and trim trailing spaces
+    t = text.replace("\r\n", "\n").replace("\r", "\n")
+    raw_lines = [line.rstrip() for line in t.split("\n")]
+    out = []
+    i = 0
+    while i < len(raw_lines):
+        line = raw_lines[i].strip()
+        if line == "":
+            out.append("")
+            i += 1
+            continue
+
+        # unwrap soft-wrapped lines: short line, no terminal punctuation, next line starts lowercase
+        if i + 1 < len(raw_lines):
+            nxt = raw_lines[i + 1].lstrip()
+            if (
+                nxt
+                and len(line) < 72
+                and not re.search(r"[\\.!?;:\\]-]\\s*$", line)
+                and nxt[:1].islower()
+            ):
+                merged = f"{line} {nxt}".strip()
+                raw_lines[i + 1] = merged
+                i += 1
+                continue
+
+        out.append(line)
+        i += 1
+
+    # collapse runs of blank lines to at most two
+    cleaned_lines = []
+    blanks = 0
+    for line in out:
+        if line == "":
+            blanks += 1
+            if blanks > 2:
+                continue
+        else:
+            blanks = 0
+        cleaned_lines.append(line)
+
+    cleaned = "\n".join(cleaned_lines)
+    cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
+    return cleaned.strip()
 
 
 def chunk_text(text):
@@ -154,8 +232,10 @@ def build():
             kind = filename.split("_", 1)[0] or "OTHER"
 
         header_text, body_text = split_header_body(raw_text)
+        body_text = normalize_body(body_text or "")
         hdr = parse_headers(header_text)
-        subject = hdr["subject"]
+        subject_raw = extract_subject(header_text, body_text)
+        subject = normalize_subject(subject_raw) or filename
         from_raw = hdr["from"]
         to_raw = hdr["to"]
         cc_raw = hdr["cc"]
@@ -347,6 +427,7 @@ def build():
     doc_rows = []
     doc_id_seq = 0
     text_offset = 0
+    sample_clean = []
     with open(TEXT_PACK_PATH, "wb") as pack_f:
         for msg in messages:
             chunks = chunk_text(msg["body_text"] or msg["raw_text"])
@@ -393,6 +474,14 @@ def build():
                         len(raw_bytes),
                     )
                 )
+
+                # Reservoir sample 50 cleaned chunks for quality checks
+                if len(sample_clean) < 50:
+                    sample_clean.append(chunk_text_value)
+                else:
+                    r = random.randint(0, doc_id_seq)
+                    if r < 50:
+                        sample_clean[r] = chunk_text_value
 
     conn.executemany(
         """
@@ -470,6 +559,31 @@ def build():
     conn.close()
 
     print(f"Wrote {len(doc_rows)} chunks into {META_DB_PATH} and {TEXT_PACK_PATH}")
+
+    # Quick quality stats on sampled chunks
+    def quality_metrics(text):
+        lines = text.splitlines()
+        if not lines:
+            return 0, 0
+        avg_len = sum(len(l) for l in lines) / len(lines)
+        max_blank = 0
+        streak = 0
+        for l in lines:
+            if l.strip() == "":
+                streak += 1
+                max_blank = max(max_blank, streak)
+            else:
+                streak = 0
+        return avg_len, max_blank
+
+    if sample_clean:
+        metrics = [quality_metrics(t) for t in sample_clean]
+        avg_avg_len = sum(m[0] for m in metrics) / len(metrics)
+        max_blanks = max(m[1] for m in metrics)
+        print(f"Sampled {len(sample_clean)} chunks: avg line length {avg_avg_len:.1f}, worst blank run {max_blanks}")
+    missing_subjects = sum(1 for row in doc_rows if not row[6])
+    if missing_subjects:
+        print(f"Warning: {missing_subjects} chunks missing subject metadata")
 
 
 if __name__ == "__main__":
