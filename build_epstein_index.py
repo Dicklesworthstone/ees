@@ -400,7 +400,7 @@ def build():
             id, message_id, chunk_index, chunk_count, filename, kind,
             subject, `from`, `to`, cc, bcc, participants, domains,
             date, date_key, thread_id, preview, text_offset, text_length, compression, text_bytes
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """,
         doc_rows,
     )
