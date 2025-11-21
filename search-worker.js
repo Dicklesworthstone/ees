@@ -62,47 +62,46 @@ const INDEX_FULL_CONFIG = {
 };
 
 async function loadDeps() {
-  // Polyfill CommonJS module/exports environment for UMD bundles
-  // We must capture and reset module.exports after EACH script to prevent overwriting.
-  
-  // 1. Initialize module/exports
-  self.module = { exports: {} };
-  self.exports = self.module.exports;
-
-  // 2. Load FlexSearch
+  // 1. Load FlexSearch FIRST in a clean environment.
+  // FlexSearch detects 'module' and behaves like a Node module if present,
+  // often failing to register 'self.FlexSearch'. By loading it first without
+  // 'module' defined, we force it to behave like a browser script.
   try {
     importScripts(FLEXSEARCH_URL);
-    // If FlexSearch attached to module.exports, capture it.
-    // If it attached to global self.FlexSearch, use that.
-    if (self.module.exports && (self.module.exports.Document || self.module.exports.Index || self.module.exports.Worker)) {
-      self.FlexSearch = self.module.exports;
-    }
   } catch (err) {
     throw new Error(`Failed to load FlexSearch: ${err.message}`);
   }
 
-  // 3. Reset module.exports for next library
-  self.module.exports = {};
+  if (typeof FlexSearch === "undefined") {
+     // Fallback: check if it somehow attached elsewhere, but it should be global now.
+     throw new Error("FlexSearch failed to load (undefined in global scope)");
+  }
+
+  // 2. Initialize module/exports for Pako
+  // Pako's UMD build prefers module.exports if available.
+  self.module = { exports: {} };
   self.exports = self.module.exports;
 
-  // 4. Load Pako
   try {
     importScripts(PAKO_URL);
+    // Capture Pako from module.exports
     if (self.module.exports && self.module.exports.inflate) {
       self.pako = self.module.exports;
+    } else if (!self.pako) {
+        // Sometimes it might still attach to global if module.exports is weird
+        // but usually module.exports is authoritative for UMD.
     }
   } catch (err) {
     throw new Error(`Failed to load pako: ${err.message}`);
   }
 
-  // 5. Reset module.exports for next library
-  self.module.exports = {};
+  // 3. Reset module/exports for fflate
+  self.module = { exports: {} };
   self.exports = self.module.exports;
 
-  // 6. Load fflate
   try {
     importScripts(FFLATE_URL);
-    // fflate usually exports multiple functions
+    // fflate exports are a flat object of functions
     if (self.module.exports && Object.keys(self.module.exports).length > 0) {
       self.fflate = self.module.exports;
     }
@@ -110,10 +109,13 @@ async function loadDeps() {
     throw new Error(`Failed to load fflate: ${err.message}`);
   }
 
+  // Cleanup polyfills so they don't mess with anything else
+  delete self.module;
+  delete self.exports;
+
   // Final verification
   if (typeof FlexSearch === "undefined") throw new Error("FlexSearch not found after load");
   if (typeof pako === "undefined") throw new Error("pako not found after load");
-  // fflate is optional now that we use pako for zlib, but good to have
   
   if (typeof initSqlJs !== "function") throw new Error("sql.js failed to load");
   const SQL = await initSqlJs({ locateFile: (file) => `vendor/${file}` });
