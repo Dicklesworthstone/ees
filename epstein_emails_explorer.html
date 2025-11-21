@@ -4,162 +4,233 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Epstein Email Explorer</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <style>
+      :root {
+        --bg: #0b1020;
+        --panel: rgba(18, 24, 45, 0.72);
+        --border: #1f2a44;
+        --accent: #7cf0c5;
+        --accent-2: #7fb0ff;
+      }
+      body {
+        background: radial-gradient(circle at 20% 20%, rgba(79, 70, 229, 0.12), transparent 25%),
+          radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.12), transparent 22%),
+          radial-gradient(circle at 40% 80%, rgba(14, 165, 233, 0.1), transparent 30%),
+          var(--bg);
+        font-family: "Space Grotesk", "Inter", "SF Pro Display", system-ui, -apple-system, sans-serif;
+      }
+      .glass {
+        background: var(--panel);
+        box-shadow: 0 16px 60px rgba(0, 0, 0, 0.45);
+        border: 1px solid var(--border);
+      }
+      .pill {
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .gradient-bar {
+        background: linear-gradient(90deg, rgba(16, 185, 129, 0.7), rgba(79, 70, 229, 0.7));
+      }
+      .card-hover {
+        transition: transform 150ms ease, box-shadow 150ms ease, border-color 150ms ease;
+      }
+      .card-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+        border-color: rgba(124, 240, 197, 0.45);
+      }
+    </style>
   </head>
-  <body class="bg-slate-950 text-slate-100">
+  <body class="text-slate-100">
+    <div id="loading-overlay" class="fixed inset-0 z-40 hidden items-center justify-center backdrop-blur-sm bg-black/60">
+      <div class="text-center space-y-3">
+        <div class="w-16 h-16 rounded-full border-4 border-emerald-300 border-t-transparent animate-spin mx-auto"></div>
+        <p class="text-sm text-slate-200">Preparing local search workspace…</p>
+      </div>
+    </div>
+
     <div class="min-h-screen flex flex-col">
-      <header class="border-b border-slate-800 bg-slate-950/80 backdrop-blur">
-        <div class="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between">
-          <div>
-            <h1 class="text-lg font-semibold tracking-tight">
-              Epstein Email Explorer
-            </h1>
-            <p class="text-xs text-slate-400">
-              Local, client-side search over the FOIA dataset (20k+ documents).
-            </p>
+      <header class="px-4 sm:px-6 lg:px-10 pt-6 pb-4">
+        <div class="mx-auto max-w-7xl">
+          <div class="glass rounded-2xl px-5 py-4 flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+            <div class="space-y-1">
+              <div class="flex items-center gap-3">
+                <span class="inline-flex h-9 w-9 items-center justify-center rounded-xl gradient-bar text-slate-900 font-semibold">EE</span>
+                <div>
+                  <h1 class="text-xl font-semibold tracking-tight">Epstein Email Explorer</h1>
+                  <p class="text-[0.8rem] text-slate-300">Client-side, zero-backend search over 20k+ FOIA documents</p>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-wrap gap-2 text-[0.75rem] text-slate-200">
+              <span class="pill rounded-full px-3 py-1">Type <code class="text-emerald-300">subject:"flight manifest"</code></span>
+              <span class="pill rounded-full px-3 py-1">Combine with <code class="text-emerald-300">AND/OR/NOT</code></span>
+              <span class="pill rounded-full px-3 py-1">Date ranges <code class="text-emerald-300">date:[2001-01-01 TO 2005-12-31]</code></span>
+            </div>
           </div>
-          <div class="flex items-center gap-2 text-xs text-slate-400">
-            <span class="hidden sm:inline">
-              Search supports field filters like
-              <code class="px-1 rounded bg-slate-900/80 text-[0.65rem]">
-                subject:"flight manifest" AND from:epstein
-              </code>
-            </span>
+
+          <div class="mt-4 grid gap-3 md:grid-cols-3">
+            <div class="glass rounded-xl px-4 py-3 flex items-center gap-3">
+              <div class="h-10 w-10 rounded-lg bg-emerald-400/20 text-emerald-200 flex items-center justify-center font-semibold">Σ</div>
+              <div>
+                <p class="text-xs text-slate-400">Documents</p>
+                <p id="stats-doc-count" class="text-lg font-semibold">—</p>
+              </div>
+            </div>
+            <div class="glass rounded-xl px-4 py-3 flex items-center gap-3">
+              <div class="h-10 w-10 rounded-lg bg-sky-400/20 text-sky-200 flex items-center justify-center font-semibold">👥</div>
+              <div>
+                <p class="text-xs text-slate-400">People</p>
+                <p id="stats-people-count" class="text-lg font-semibold">—</p>
+              </div>
+            </div>
+            <div class="glass rounded-xl px-4 py-3 flex items-center gap-3">
+              <div class="h-10 w-10 rounded-lg bg-indigo-400/20 text-indigo-200 flex items-center justify-center font-semibold">⏳</div>
+              <div>
+                <p class="text-xs text-slate-400">Coverage</p>
+                <p id="stats-date-range" class="text-lg font-semibold">—</p>
+              </div>
+            </div>
           </div>
         </div>
       </header>
 
-      <main class="flex-1 flex overflow-hidden">
+      <main class="flex-1 flex overflow-hidden px-4 sm:px-6 lg:px-10 pb-6">
         <!-- Left pane: search / people -->
         <aside
-          class="w-full md:w-96 border-r border-slate-800 flex flex-col bg-slate-950/80"
+          class="w-full md:w-[420px] flex flex-col gap-3"
         >
-          <div class="px-4 pt-3 pb-2 border-b border-slate-800">
-            <div class="flex items-center gap-2 mb-2">
-              <button
-                id="mode-docs"
-                type="button"
-                class="text-xs px-3 py-1 rounded-full bg-slate-800 border border-slate-700"
-              >
-                Documents
-              </button>
-              <button
-                id="mode-people"
-                type="button"
-                class="text-xs px-3 py-1 rounded-full border border-slate-700 text-slate-300 hover:bg-slate-800"
-              >
-                People
-              </button>
+          <div class="glass rounded-xl p-4 border border-slate-800/80">
+            <div class="flex items-center gap-2 mb-3">
+              <div class="flex rounded-full p-1 bg-slate-900/70 border border-slate-800">
+                <button
+                  id="mode-docs"
+                  type="button"
+                  class="px-3 py-1.5 text-xs rounded-full bg-slate-800 text-emerald-300 font-semibold"
+                >
+                  Documents
+                </button>
+                <button
+                  id="mode-people"
+                  type="button"
+                  class="px-3 py-1.5 text-xs rounded-full text-slate-200 hover:bg-slate-800"
+                >
+                  People
+                </button>
+              </div>
               <div class="flex-1"></div>
               <span
                 id="results-count"
-                class="text-[0.7rem] text-slate-400 whitespace-nowrap"
+                class="text-[0.75rem] text-slate-300 whitespace-nowrap"
               >
                 Loading…
               </span>
             </div>
-          </div>
 
-          <!-- Documents panel -->
-          <div id="panel-docs" class="flex-1 flex flex-col overflow-hidden">
-            <div class="px-4 pt-2 pb-2 space-y-2 border-b border-slate-800">
-              <div>
+            <!-- Documents panel -->
+            <div id="panel-docs" class="flex-1 flex flex-col gap-3 overflow-hidden">
+              <div class="space-y-2">
                 <label
                   for="search-query"
-                  class="block text-[0.65rem] uppercase tracking-wide text-slate-400 mb-1"
-                  >Query</label
+                  class="block text-[0.7rem] uppercase tracking-wide text-slate-400"
+                  >Search across all fields</label
                 >
-                <input
-                  id="search-query"
-                  type="text"
-                  placeholder='e.g. "flight manifest" AND from:epstein'
-                  class="w-full text-sm rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
-              </div>
-              <div class="flex items-center gap-2 text-[0.65rem] text-slate-400">
-                <span>Fields:</span>
-                <code>subject:</code>
-                <code>from:</code>
-                <code>to:</code>
-                <code>body:</code>
-                <code>date:[2001-01-01 TO 2005-12-31]</code>
-              </div>
-              <div class="flex items-center justify-between gap-2">
-                <div class="flex-1">
-                  <label
-                    for="filename-filter"
-                    class="block text-[0.65rem] uppercase tracking-wide text-slate-400 mb-1"
-                    >Filename contains</label
-                  >
+                <div class="relative">
+                  <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">🔍</span>
                   <input
-                    id="filename-filter"
+                    id="search-query"
                     type="text"
-                    placeholder="e.g. flight"
-                    class="w-full text-xs rounded-md bg-slate-900 border border-slate-700 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                    placeholder='e.g. "flight manifest" AND from:epstein'
+                    class="w-full text-sm rounded-xl bg-slate-900 border border-slate-800 pl-9 pr-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400/70"
                   />
                 </div>
-                <div class="flex flex-col gap-1">
-                  <label
-                    class="text-[0.65rem] uppercase tracking-wide text-slate-400"
-                    >Date range</label
-                  >
-                  <div class="flex items-center gap-1">
+                <div class="flex flex-wrap gap-2 text-[0.7rem] text-slate-300">
+                  <span class="pill rounded-full px-3 py-1">subject:</span>
+                  <span class="pill rounded-full px-3 py-1">from:</span>
+                  <span class="pill rounded-full px-3 py-1">to:</span>
+                  <span class="pill rounded-full px-3 py-1">body:</span>
+                  <span class="pill rounded-full px-3 py-1">date:[YYYY-MM-DD TO YYYY-MM-DD]</span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 gap-3">
+                <div class="glass rounded-lg border border-slate-800/80 p-3 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[0.7rem] uppercase tracking-wide text-slate-400">Filters</span>
+                    <button
+                      id="clear-filters"
+                      type="button"
+                      class="text-[0.7rem] text-emerald-300 hover:text-emerald-200"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                  <div class="flex items-center gap-2">
+                    <input
+                      id="filename-filter"
+                      type="text"
+                      placeholder="Filename contains"
+                      class="w-full text-xs rounded-md bg-slate-900 border border-slate-800 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-400/60"
+                    />
+                  </div>
+                  <div class="flex items-center gap-3 text-[0.75rem] text-slate-300">
+                    <label class="text-[0.65rem] uppercase tracking-wide text-slate-400">Date range</label>
                     <input
                       id="date-from"
                       type="date"
-                      class="w-28 text-[0.7rem] rounded-md bg-slate-900 border border-slate-700 px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      class="w-32 text-[0.75rem] rounded-md bg-slate-900 border border-slate-800 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-400/60"
                     />
-                    <span class="text-[0.65rem] text-slate-500">→</span>
+                    <span class="text-slate-500">→</span>
                     <input
                       id="date-to"
                       type="date"
-                      class="w-28 text-[0.7rem] rounded-md bg-slate-900 border border-slate-700 px-1 py-0.5 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      class="w-32 text-[0.75rem] rounded-md bg-slate-900 border border-slate-800 px-2 py-1 focus:outline-none focus:ring-1 focus:ring-emerald-400/60"
                     />
+                  </div>
+                  <div>
+                    <div class="flex items-center justify-between mb-1">
+                      <span
+                        class="text-[0.65rem] uppercase tracking-wide text-slate-400"
+                        >Kinds</span
+                      >
+                    </div>
+                    <div
+                      id="kinds-filter"
+                      class="flex flex-wrap gap-2 text-[0.75rem]"
+                    ></div>
+                  </div>
+                  <div>
+                    <div class="flex items-center justify-between mb-1">
+                      <span
+                        class="text-[0.65rem] uppercase tracking-wide text-slate-400"
+                        >Timeline</span
+                      >
+                    </div>
+                    <div id="timeline" class="h-14 flex items-end"></div>
                   </div>
                 </div>
               </div>
 
-              <div>
-                <div class="flex items-center justify-between mb-1">
-                  <span
-                    class="text-[0.65rem] uppercase tracking-wide text-slate-400"
-                    >Kinds</span
-                  >
-                  <button
-                    id="clear-filters"
-                    type="button"
-                    class="text-[0.65rem] text-emerald-400 hover:text-emerald-300"
-                  >
-                    Clear filters
-                  </button>
+              <div class="glass rounded-xl border border-slate-800/80 p-2 flex-1 overflow-hidden">
+                <div class="flex items-center justify-between px-1 pb-1 text-[0.75rem] text-slate-300">
+                  <span>Results</span>
+                  <span class="text-slate-500">Top 200 shown</span>
                 </div>
-                <div
-                  id="kinds-filter"
-                  class="flex flex-wrap gap-1 text-[0.7rem]"
-                ></div>
-              </div>
-
-              <div>
-                <div class="flex items-center justify-between mb-1">
-                  <span
-                    class="text-[0.65rem] uppercase tracking-wide text-slate-400"
-                    >Timeline</span
-                  >
-                </div>
-                <div id="timeline" class="h-12 flex items-end"></div>
+                <div class="flex-1 overflow-y-auto px-1 pb-2" id="results-list"></div>
               </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto px-2 py-2" id="results-list"></div>
-          </div>
-
-          <!-- People panel -->
-          <div
-            id="panel-people"
-            class="hidden flex-1 flex flex-col overflow-hidden"
-          >
-            <div class="px-4 pt-2 pb-2 space-y-2 border-b border-slate-800">
-              <div>
+            <!-- People panel -->
+            <div
+              id="panel-people"
+              class="hidden flex-1 flex flex-col overflow-hidden"
+            >
+              <div class="glass rounded-xl border border-slate-800/80 p-3 space-y-2">
                 <label
                   for="people-search"
                   class="block text-[0.65rem] uppercase tracking-wide text-slate-400 mb-1"
@@ -169,35 +240,41 @@
                   id="people-search"
                   type="text"
                   placeholder="Search by name or email"
-                  class="w-full text-sm rounded-md bg-slate-900 border border-slate-700 px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                  class="w-full text-sm rounded-md bg-slate-900 border border-slate-800 px-3 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-500"
                 />
+                <p class="text-[0.75rem] text-slate-400">
+                  Click a person to filter documents they participate in.
+                </p>
               </div>
-              <p class="text-[0.7rem] text-slate-400">
-                Click a person to filter the document view to messages they
-                participate in.
-              </p>
+              <div
+                id="people-list"
+                class="flex-1 overflow-y-auto px-1 py-2 text-xs space-y-1"
+              ></div>
             </div>
-            <div
-              id="people-list"
-              class="flex-1 overflow-y-auto px-2 py-2 text-xs space-y-1"
-            ></div>
           </div>
         </aside>
 
         <!-- Right pane: detail view -->
         <section class="flex-1 flex flex-col overflow-hidden">
-          <div class="flex-1 overflow-y-auto px-4 py-4">
+          <div class="glass flex-1 overflow-y-auto px-4 py-4 rounded-2xl border border-slate-800/80">
             <div class="mx-auto max-w-3xl">
-              <h2
-                id="detail-title"
-                class="text-lg font-semibold tracking-tight mb-1"
-              >
-                Select a message
-              </h2>
-              <div
-                id="detail-meta"
-                class="text-xs text-slate-400 mb-2 break-words"
-              ></div>
+              <div class="flex items-start justify-between gap-3 mb-2">
+                <div>
+                  <h2
+                    id="detail-title"
+                    class="text-xl font-semibold tracking-tight mb-1"
+                  >
+                    Select a message
+                  </h2>
+                  <div
+                    id="detail-meta"
+                    class="text-xs text-slate-300 mb-2 break-words"
+                  ></div>
+                </div>
+                <div>
+                  <div class="rounded-full px-3 py-1 text-[0.7rem] bg-slate-900 border border-slate-800 text-emerald-300">Client-side only</div>
+                </div>
+              </div>
               <div
                 id="detail-chunk-nav"
                 class="flex items-center gap-2 mb-3 text-xs text-slate-300"
@@ -310,6 +387,33 @@
             document.getElementById("detail-chunk-nav");
           elements.clearFiltersBtn =
             document.getElementById("clear-filters");
+          elements.loadingOverlay = document.getElementById("loading-overlay");
+          elements.statsDocCount = document.getElementById("stats-doc-count");
+          elements.statsPeopleCount = document.getElementById("stats-people-count");
+          elements.statsDateRange = document.getElementById("stats-date-range");
+        }
+
+        function setLoading(show) {
+          state.isLoading = show;
+          if (!elements.loadingOverlay) return;
+          elements.loadingOverlay.classList.toggle("hidden", !show);
+        }
+
+        function renderStats() {
+          const docCount = state.docs?.length || 0;
+          const peopleCount = state.people?.length || 0;
+          const dates = state.docs
+            .map((d) => d.date_key)
+            .filter(Boolean)
+            .sort();
+          const dateRange = dates.length
+            ? `${dates[0]} → ${dates[dates.length - 1]}`
+            : "—";
+          if (elements.statsDocCount)
+            elements.statsDocCount.textContent = docCount.toLocaleString();
+          if (elements.statsPeopleCount)
+            elements.statsPeopleCount.textContent = peopleCount.toLocaleString();
+          if (elements.statsDateRange)\n+            elements.statsDateRange.textContent = dateRange;
         }
 
         function setupWorker() {
@@ -806,7 +910,7 @@
 
           if (!results.length) {
             const p = document.createElement("p");
-            p.className = "text-sm text-slate-400 px-2 py-2";
+            p.className = "text-sm text-slate-400 px-3 py-3";
             p.textContent = "No results.";
             list.appendChild(p);
             return;
@@ -818,29 +922,28 @@
             btn.type = "button";
             btn.dataset.docId = String(doc.id);
             btn.className =
-              "block w-full text-left px-3 py-2 rounded-lg mb-1 border border-slate-800 bg-slate-950/80 hover:bg-slate-900/80 " +
+              "block w-full text-left px-4 py-3 rounded-xl mb-2 border border-slate-800/80 bg-slate-900/70 card-hover " +
               (String(state.selectedDocId) === String(doc.id)
-                ? "ring-1 ring-emerald-500"
+                ? "ring-2 ring-emerald-400/70"
                 : "");
 
             const title = document.createElement("div");
-            title.className = "text-sm font-medium truncate";
+            title.className = "text-[0.95rem] font-semibold truncate";
             title.textContent = doc.subject || "(No subject)";
 
             const meta = document.createElement("div");
-            meta.className = "text-[0.7rem] text-slate-400 truncate";
-            meta.textContent = [
+            meta.className = "text-[0.75rem] text-slate-400 truncate flex flex-wrap gap-1";
+            const metaParts = [
               doc.date_key || "",
               doc.from || "",
               doc.to || "",
               doc.filename || "",
-            ]
-              .filter(Boolean)
-              .join(" • ");
+            ].filter(Boolean);
+            meta.textContent = metaParts.join(" • ");
 
             const preview = document.createElement("div");
             preview.className =
-              "text-[0.7rem] text-slate-300 line-clamp-2 mt-0.5";
+              "text-[0.8rem] text-slate-200/90 line-clamp-2 mt-1";
             preview.textContent = doc.preview || "";
 
             btn.appendChild(title);
@@ -1272,6 +1375,7 @@
 
         async function runSearch() {
           if (!state.docs.length) return;
+          if (elements.resultsCount) elements.resultsCount.textContent = "Searching…";
           const generation = ++searchGeneration;
           const query = elements.queryInput.value || "";
           state.queryText = query;
@@ -1456,10 +1560,11 @@
 
             state.neighborsById = new Map();
 
-            buildThreadsIndex();
-            renderKindsFilter();
-            renderTimeline();
-            switchMode("docs");
+          buildThreadsIndex();
+          renderKindsFilter();
+          renderTimeline();
+          renderStats();
+          switchMode("docs");
 
             if (state.timeline.length) {
               const dates = state.timeline.map((b) => b.date).sort();
@@ -1481,7 +1586,8 @@
         function init() {
           cacheElements();
           attachListeners();
-          loadAllData();
+          setLoading(true);
+          loadAllData().finally(() => setLoading(false));
         }
 
         document.addEventListener("DOMContentLoaded", init);
