@@ -1,0 +1,3259 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Epstein Email Explorer</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%237cf0c5'/%3E%3Ctext x='32' y='38' text-anchor='middle' font-size='32' font-family='Helvetica,Arial,sans-serif' fill='%230b1020'%3EE%3C/text%3E%3C/svg%3E" />
+    <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+    <style>
+      :root {
+        /* Refined color palette - Stripe-inspired */
+        --bg: #0a0e1a;
+        --bg-elevated: #0d1117;
+        --bg-subtle: #161b22;
+        --panel: rgba(13, 17, 23, 0.92);
+        --panel-hover: rgba(21, 26, 35, 0.98);
+        --border: rgba(48, 54, 61, 0.48);
+        --border-hover: rgba(99, 110, 123, 0.48);
+        --border-active: rgba(124, 240, 197, 0.48);
+
+        /* Accent colors with refined shades */
+        --accent: #34d399;
+        --accent-hover: #10b981;
+        --accent-light: #6ee7b7;
+        --accent-dark: #059669;
+        --accent-glow: rgba(52, 211, 153, 0.24);
+
+        /* Secondary accent */
+        --accent-2: #60a5fa;
+        --accent-2-hover: #3b82f6;
+        --accent-2-glow: rgba(96, 165, 250, 0.24);
+
+        /* Text hierarchy */
+        --text-primary: #f0f6fc;
+        --text-secondary: #c9d1d9;
+        --text-tertiary: #8b949e;
+        --text-muted: #6e7681;
+        --text-subtle: #484f58;
+
+        /* Semantic colors */
+        --success: #3fb950;
+        --success-emphasis: #238636;
+        --warning: #d29922;
+        --warning-emphasis: #9e6a03;
+        --error: #f85149;
+        --error-emphasis: #da3633;
+        --info: #58a6ff;
+        --info-emphasis: #1f6feb;
+
+        /* Refined shadows with multiple layers */
+        --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.16);
+        --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.24), 0 1px 2px rgba(0, 0, 0, 0.16);
+        --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.32), 0 2px 8px rgba(0, 0, 0, 0.24);
+        --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.40), 0 4px 16px rgba(0, 0, 0, 0.32);
+        --shadow-xl: 0 24px 64px rgba(0, 0, 0, 0.48), 0 8px 32px rgba(0, 0, 0, 0.40);
+        --shadow-2xl: 0 32px 96px rgba(0, 0, 0, 0.56), 0 12px 48px rgba(0, 0, 0, 0.48);
+
+        /* Refined transitions - spring-like */
+        --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
+        --transition-smooth: 350ms cubic-bezier(0.4, 0, 0.1, 1);
+        --transition-spring: 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+        /* Spacing scale */
+        --space-1: 0.25rem;
+        --space-2: 0.5rem;
+        --space-3: 0.75rem;
+        --space-4: 1rem;
+        --space-5: 1.25rem;
+        --space-6: 1.5rem;
+        --space-8: 2rem;
+        --space-10: 2.5rem;
+        --space-12: 3rem;
+
+        /* Border radius scale */
+        --radius-sm: 0.375rem;
+        --radius-md: 0.5rem;
+        --radius-lg: 0.75rem;
+        --radius-xl: 1rem;
+        --radius-2xl: 1.5rem;
+        --radius-full: 9999px;
+      }
+
+      body {
+        background: radial-gradient(circle at 22% 12%, rgba(52, 211, 153, 0.09), transparent 32%),
+          radial-gradient(circle at 88% 8%, rgba(96, 165, 250, 0.08), transparent 28%),
+          radial-gradient(circle at 48% 90%, rgba(139, 92, 246, 0.07), transparent 38%),
+          radial-gradient(circle at 95% 95%, rgba(244, 114, 182, 0.05), transparent 42%),
+          var(--bg);
+        font-family: "Space Grotesk", "Inter", "SF Pro Display", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        color: var(--text-primary);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        text-rendering: optimizeLegibility;
+        letter-spacing: -0.011em;
+      }
+
+      /* Refined glass morphism with perfect depth */
+      .glass {
+        background: var(--panel);
+        backdrop-filter: blur(24px) saturate(180%);
+        box-shadow: var(--shadow-lg),
+                    inset 0 1px 1px rgba(255, 255, 255, 0.06),
+                    inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+        border: 1px solid var(--border);
+        transition: all var(--transition-smooth);
+      }
+
+      .glass:hover {
+        border-color: var(--border-hover);
+        box-shadow: var(--shadow-xl),
+                    inset 0 1px 1px rgba(255, 255, 255, 0.09),
+                    inset 0 -1px 0 rgba(0, 0, 0, 0.12);
+        transform: translateY(-1px);
+      }
+
+      /* Refined pills with perfect touch */
+      .pill {
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.025);
+        transition: all var(--transition-base);
+        position: relative;
+      }
+
+      .pill::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 100%);
+        opacity: 0;
+        transition: opacity var(--transition-base);
+      }
+
+      .pill:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: var(--border-hover);
+        box-shadow: 0 0 0 1px var(--border-hover),
+                    0 0 16px var(--accent-glow);
+        transform: translateY(-1px);
+      }
+
+      .pill:hover::before {
+        opacity: 1;
+      }
+
+      /* Refined gradient with premium shimmer */
+      .gradient-bar {
+        background: linear-gradient(135deg,
+          rgba(52, 211, 153, 1) 0%,
+          rgba(96, 165, 250, 0.95) 50%,
+          rgba(139, 92, 246, 1) 100%);
+        box-shadow: 0 4px 16px rgba(52, 211, 153, 0.4),
+                    0 8px 32px rgba(96, 165, 250, 0.2);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .gradient-bar::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: linear-gradient(135deg,
+          rgba(255, 255, 255, 0.2) 0%,
+          transparent 60%);
+        opacity: 0.5;
+      }
+
+      .gradient-bar::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -100%;
+        width: 60%;
+        height: 200%;
+        background: linear-gradient(90deg,
+          transparent,
+          rgba(255, 255, 255, 0.4),
+          transparent);
+        animation: shimmer 4s ease-in-out infinite;
+        transform: skewX(-25deg);
+      }
+
+      @keyframes shimmer {
+        0% { left: -100%; opacity: 0; }
+        40% { opacity: 1; }
+        60% { opacity: 1; }
+        100% { left: 150%; opacity: 0; }
+      }
+
+      /* Premium card hover with spring physics */
+      .card-hover {
+        transition: transform var(--transition-spring),
+                    box-shadow var(--transition-smooth),
+                    border-color var(--transition-base),
+                    background-color var(--transition-smooth);
+        will-change: transform;
+        position: relative;
+      }
+
+      .card-hover::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: linear-gradient(135deg,
+          var(--accent-glow) 0%,
+          transparent 100%);
+        opacity: 0;
+        transition: opacity var(--transition-smooth);
+        pointer-events: none;
+      }
+
+      .card-hover:hover {
+        transform: translateY(-2px) scale(1.0075);
+        box-shadow: var(--shadow-xl),
+                    0 0 0 1px var(--border-active),
+                    0 0 32px var(--accent-glow);
+        border-color: var(--border-active);
+        background-color: var(--panel-hover);
+      }
+
+      .card-hover:hover::before {
+        opacity: 0.5;
+      }
+
+      .card-hover:active {
+        transform: translateY(-1px) scale(1.0025);
+        transition: transform 100ms cubic-bezier(0.4, 0, 0.6, 1);
+      }
+
+      /* Premium focus states - Stripe-quality */
+      *:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 3px;
+        border-radius: var(--radius-sm);
+      }
+
+      input:focus, button:focus {
+        outline: none;
+      }
+
+      input:focus-visible,
+      textarea:focus-visible,
+      select:focus-visible {
+        border-color: var(--border-active);
+        box-shadow: 0 0 0 3px var(--accent-glow),
+                    0 1px 3px rgba(0, 0, 0, 0.12),
+                    inset 0 1px 2px rgba(255, 255, 255, 0.04);
+        transform: translateY(-1px);
+        transition: all var(--transition-base);
+      }
+
+      button:focus-visible {
+        box-shadow: 0 0 0 3px var(--accent-glow),
+                    var(--shadow-md);
+        transform: translateY(-1px);
+      }
+
+      /* Refined skeleton loading with shimmer */
+      @keyframes skeleton-pulse {
+        0%, 100% { opacity: 0.6; }
+        50% { opacity: 1; }
+      }
+
+      .skeleton {
+        background: linear-gradient(110deg,
+          rgba(255, 255, 255, 0.04) 0%,
+          rgba(255, 255, 255, 0.04) 40%,
+          rgba(255, 255, 255, 0.12) 50%,
+          rgba(255, 255, 255, 0.04) 60%,
+          rgba(255, 255, 255, 0.04) 100%);
+        background-size: 200% 100%;
+        animation: skeleton-shimmer 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        border-radius: var(--radius-md);
+      }
+
+      @keyframes skeleton-shimmer {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+
+      /* Smooth scroll behavior */
+      * {
+        scroll-behavior: smooth;
+      }
+
+      /* Premium custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: transparent;
+        margin: 2px;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: rgba(52, 211, 153, 0.2);
+        border-radius: var(--radius-full);
+        border: 2px solid transparent;
+        background-clip: padding-box;
+        transition: all var(--transition-base);
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: rgba(52, 211, 153, 0.35);
+        border-width: 1px;
+      }
+
+      ::-webkit-scrollbar-thumb:active {
+        background: rgba(52, 211, 153, 0.5);
+      }
+
+      ::-webkit-scrollbar-corner {
+        background: transparent;
+      }
+
+      /* Refined fade-in with scale */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(12px) scale(0.98);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      .fade-in {
+        animation: fadeIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      }
+
+      /* Loading spinner enhancement */
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .loading-spinner {
+        animation: spin 0.8s linear infinite;
+      }
+
+      /* Premium button enhancements */
+      button {
+        cursor: pointer;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+        font-weight: 500;
+        letter-spacing: -0.006em;
+        position: relative;
+        overflow: hidden;
+      }
+
+      button::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        opacity: 0;
+        transition: opacity var(--transition-fast);
+        pointer-events: none;
+      }
+
+      button:hover::after {
+        opacity: 1;
+      }
+
+      button:disabled {
+        cursor: not-allowed;
+        opacity: 0.4;
+        filter: grayscale(0.5);
+      }
+
+      button:not(:disabled):active {
+        transform: scale(0.97);
+        transition: transform 80ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      /* Premium input enhancements */
+      input,
+      textarea,
+      select {
+        transition: all var(--transition-base);
+      }
+
+      input::placeholder,
+      textarea::placeholder {
+        color: var(--text-muted);
+        opacity: 0.6;
+        transition: opacity var(--transition-fast);
+      }
+
+      input:focus::placeholder,
+      textarea:focus::placeholder {
+        opacity: 0.4;
+      }
+
+      input:hover:not(:focus),
+      textarea:hover:not(:focus),
+      select:hover:not(:focus) {
+        border-color: var(--border-hover);
+      }
+
+      /* Line clamp utility */
+      .line-clamp-2 {
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      /* ==================== Mobile Optimizations ==================== */
+      @media (max-width: 768px) {
+        /* Better readability and layout on mobile */
+        body {
+          font-size: 14px;
+          line-height: 1.6;
+          overflow-x: hidden;
+        }
+
+        /* Header optimizations with safe area support */
+        header {
+          padding-left: 1rem !important;
+          padding-right: 1rem !important;
+          padding-top: max(1rem, env(safe-area-inset-top)) !important;
+          padding-bottom: 1rem !important;
+          position: sticky;
+          top: 0;
+          z-index: 30;
+          background: var(--bg);
+          transition: box-shadow var(--transition-base);
+        }
+
+        /* Add shadow when scrolled */
+        header.scrolled {
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        /* Main content spacing with safe area support */
+        main {
+          padding-left: max(1rem, env(safe-area-inset-left)) !important;
+          padding-right: max(1rem, env(safe-area-inset-right)) !important;
+          padding-bottom: max(1rem, env(safe-area-inset-bottom)) !important;
+          flex-direction: column !important;
+          gap: 1rem;
+          overflow-x: hidden;
+        }
+
+        /* Make aside full-width on mobile with better sizing */
+        aside {
+          width: 100% !important;
+          max-height: calc(100vh - 320px);
+          margin-bottom: 0;
+          overflow-x: hidden;
+        }
+
+        /* Detail panel adjustments */
+        section {
+          margin-left: 0 !important;
+          width: 100%;
+          min-height: calc(100vh - 220px);
+          overflow-x: hidden;
+        }
+
+        /* Slide animations using opacity instead of transform to avoid position:absolute issues */
+        aside.slide-out-left {
+          animation: fadeOut 0.2s ease-out forwards;
+        }
+
+        aside.slide-in-left {
+          animation: fadeIn 0.2s ease-in forwards;
+        }
+
+        section.slide-in-right {
+          animation: fadeIn 0.2s ease-in forwards;
+        }
+
+        section.slide-out-right {
+          animation: fadeOut 0.2s ease-out forwards;
+        }
+
+        @keyframes fadeOut {
+          from {
+            opacity: 1;
+          }
+          to {
+            opacity: 0;
+          }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        /* Increase touch targets */
+        button {
+          min-height: 44px;
+          position: relative;
+        }
+
+        /* Sticky search/mode area on mobile */
+        #sidebar-panel > div:first-child {
+          position: sticky;
+          top: 0;
+          z-index: 20;
+          background: var(--bg);
+          padding-bottom: 1rem;
+          margin-bottom: -1rem;
+        }
+
+        /* Mode toggle buttons - larger for easier tapping */
+        #mode-docs, #mode-people {
+          padding-left: 1.25rem !important;
+          padding-right: 1.25rem !important;
+          padding-top: 0.625rem !important;
+          padding-bottom: 0.625rem !important;
+          font-size: 0.8rem !important;
+        }
+
+        /* Filter toggle with active count badge */
+        #filters-header .mobile-filter-badge {
+          display: inline-flex !important;
+          align-items: center;
+          justify-content: center;
+          min-width: 20px;
+          height: 20px;
+          padding: 0 6px;
+          background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+          color: #000;
+          border-radius: 10px;
+          font-size: 0.65rem;
+          font-weight: 700;
+          margin-left: 0.5rem;
+          box-shadow: 0 2px 8px var(--accent-glow);
+        }
+
+        #filters-header .mobile-filter-badge.empty {
+          display: none !important;
+        }
+
+        /* Search input - optimized for mobile */
+        #search-query {
+          font-size: 16px !important; /* Prevents iOS zoom */
+          padding-top: 0.875rem !important;
+          padding-bottom: 0.875rem !important;
+          line-height: 1.5;
+        }
+
+        /* Search hint pills - make scrollable on mobile */
+        #panel-docs .flex.flex-wrap.gap-1\.5 {
+          flex-wrap: nowrap !important;
+          overflow-x: auto;
+          overflow-y: hidden;
+          -webkit-overflow-scrolling: touch;
+          scroll-snap-type: x mandatory;
+          scrollbar-width: none;
+          padding-bottom: 0.25rem;
+        }
+
+        #panel-docs .flex.flex-wrap.gap-1\.5::-webkit-scrollbar {
+          display: none;
+        }
+
+        #panel-docs .flex.flex-wrap.gap-1\.5 > span {
+          flex-shrink: 0;
+          scroll-snap-align: start;
+        }
+
+        /* Filter inputs - optimized for mobile */
+        #filename-filter,
+        #date-from,
+        #date-to,
+        #people-search {
+          font-size: 16px !important; /* Prevents iOS zoom */
+          padding: 0.75rem !important;
+        }
+
+        /* Result cards - better spacing and text wrapping */
+        .card-hover {
+          margin-bottom: 0.75rem;
+        }
+
+        #results-list button > div {
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        /* Stats cards - horizontal scroll on mobile for better UX */
+        header .md\:grid-cols-3 {
+          display: flex !important;
+          flex-direction: row !important;
+          gap: 0.75rem !important;
+          overflow-x: auto;
+          overflow-y: hidden;
+          scroll-snap-type: x mandatory;
+          -webkit-overflow-scrolling: touch;
+          scrollbar-width: none;
+          padding-bottom: 0.5rem;
+        }
+
+        header .md\:grid-cols-3::-webkit-scrollbar {
+          display: none;
+        }
+
+        header .md\:grid-cols-3 > div {
+          flex: 0 0 85%;
+          scroll-snap-align: start;
+          padding: 1rem !important;
+        }
+
+        /* Scroll indicator for stats */
+        header .md\:grid-cols-3::after {
+          content: '';
+          flex: 0 0 0.5rem;
+        }
+
+        /* Stack stats cards on very small screens */
+        @media (max-width: 640px) {
+          header .md\:grid-cols-3 > div {
+            flex: 0 0 90%;
+          }
+        }
+
+        /* Touch ripple effect for buttons and cards - using ::after to avoid conflicts */
+        button:not(.pill), .card-hover {
+          position: relative;
+          overflow: hidden;
+        }
+
+        /* Touch feedback - override desktop hover effect on mobile with active state */
+        /* Don't use ::after as it conflicts with existing desktop button::after */
+        button:not(.pill):active {
+          background-color: rgba(124, 240, 197, 0.08);
+          transform: scale(0.98);
+        }
+
+        /* Card ripple uses a wrapper approach to avoid ::before conflict */
+        .card-hover {
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        /* Reduce animation intensity on mobile for performance */
+        .fade-in {
+          animation-duration: 0.2s !important;
+        }
+
+        .card-hover:hover {
+          transform: translateY(-1px) scale(1.005);
+        }
+
+        /* Header title - adjust size and wrapping */
+        h1 {
+          font-size: 1.5rem !important;
+          line-height: 1.3 !important;
+        }
+
+        /* Helper pills - make more compact or hide on very small screens */
+        header .pill {
+          font-size: 0.65rem !important;
+          padding: 0.375rem 0.625rem !important;
+        }
+
+        header .pill code {
+          font-size: 0.6rem !important;
+        }
+
+        @media (max-width: 640px) {
+          header .pill:nth-child(n+2) {
+            display: none !important;
+          }
+        }
+
+        /* Detail view title - better wrapping */
+        #detail-title {
+          font-size: 1.5rem !important;
+          line-height: 1.4 !important;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        /* Detail meta - better wrapping */
+        #detail-meta {
+          line-height: 1.6 !important;
+          word-wrap: break-word;
+        }
+
+        /* Optimize glass effect on mobile (less blur for performance) */
+        .glass {
+          backdrop-filter: blur(10px) saturate(150%);
+          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4),
+                      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+        }
+
+        /* Pills - easier to tap with better spacing */
+        .pill {
+          padding: 0.5rem 1rem;
+          margin: 0.25rem;
+        }
+
+        /* Timeline - smaller on mobile with better touch targets */
+        #timeline {
+          height: 3rem !important;
+        }
+
+        #timeline > div > div {
+          min-width: 3px;
+        }
+
+        /* Participant buttons - full width for easier tapping */
+        #detail-participants button {
+          width: 100%;
+          justify-content: center;
+          margin-bottom: 0.5rem;
+        }
+
+        /* Active filter chips - floating display */
+        .mobile-active-filters {
+          display: flex !important;
+          flex-wrap: wrap;
+          gap: 0.5rem;
+          padding: 0.75rem 1rem;
+          background: rgba(13, 17, 23, 0.95);
+          backdrop-filter: blur(10px);
+          border-bottom: 1px solid var(--border);
+          margin-top: -0.5rem;
+          margin-bottom: 0.5rem;
+        }
+
+        .mobile-active-filters.empty {
+          display: none !important;
+        }
+
+        .mobile-filter-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.375rem 0.75rem;
+          background: linear-gradient(135deg, rgba(52, 211, 153, 0.15), rgba(96, 165, 250, 0.1));
+          border: 1px solid rgba(52, 211, 153, 0.3);
+          border-radius: 1rem;
+          font-size: 0.7rem;
+          font-weight: 600;
+          color: var(--accent-light);
+        }
+
+        .mobile-filter-chip button {
+          min-height: auto;
+          padding: 0;
+          width: 16px;
+          height: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 50%;
+          font-size: 0.7rem;
+          line-height: 1;
+        }
+
+        /* Chunk navigation - keep buttons compact */
+        #detail-chunk-nav > div {
+          flex-direction: row !important;
+          flex-wrap: wrap !important;
+          align-items: center !important;
+          gap: 0.5rem;
+          justify-content: space-between;
+        }
+
+        #detail-chunk-nav button {
+          flex: 0 1 auto;
+          min-width: 44px;
+          padding: 0.5rem 0.75rem !important;
+          font-size: 0.7rem !important;
+        }
+
+        /* Results and people lists - optimize height and scrolling */
+        #results-list {
+          max-height: calc(100vh - 420px);
+          min-height: 200px;
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior: contain;
+          scroll-behavior: smooth;
+        }
+
+        #people-list {
+          max-height: calc(100vh - 400px);
+          min-height: 200px;
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior: contain;
+          scroll-behavior: smooth;
+        }
+
+        /* Scroll indicators for lists */
+        #results-list::before,
+        #people-list::before {
+          content: '';
+          position: sticky;
+          top: 0;
+          display: block;
+          height: 2px;
+          background: linear-gradient(90deg, var(--accent), var(--accent-2));
+          opacity: 0;
+          transition: opacity var(--transition-base);
+          margin-bottom: -2px;
+          z-index: 10;
+        }
+
+        #results-list.scrolled::before,
+        #people-list.scrolled::before {
+          opacity: 1;
+        }
+
+        /* Detail body - optimize for mobile reading */
+        #detail-body {
+          padding: 1rem !important;
+          font-size: 0.85rem !important;
+          line-height: 1.7 !important;
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior: contain;
+        }
+
+        /* Empty states - better sizing */
+        #results-list .flex.flex-col.items-center,
+        #people-list .flex.flex-col.items-center {
+          padding-top: 2rem !important;
+          padding-bottom: 2rem !important;
+        }
+
+        /* Swipe gesture indicator */
+        .mobile-swipe-indicator {
+          position: fixed;
+          left: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          width: 4px;
+          height: 60px;
+          background: linear-gradient(180deg, transparent, var(--accent), transparent);
+          opacity: 0;
+          transition: opacity var(--transition-fast), width var(--transition-fast);
+          pointer-events: none;
+          z-index: 100;
+          border-radius: 0 4px 4px 0;
+        }
+
+        .mobile-swipe-indicator.active {
+          opacity: 0.8;
+          width: 8px;
+        }
+
+        /* Enhanced result cards for mobile */
+        #results-list button {
+          -webkit-tap-highlight-color: transparent;
+          touch-action: manipulation;
+        }
+
+        #results-list button.selected {
+          background: linear-gradient(135deg, rgba(52, 211, 153, 0.12), rgba(96, 165, 250, 0.08)) !important;
+          border-left: 3px solid var(--accent) !important;
+          padding-left: calc(1rem - 3px) !important;
+        }
+
+        /* Better mobile scrollbar */
+        ::-webkit-scrollbar {
+          width: 4px;
+          height: 4px;
+        }
+
+        /* Metadata sections - scrollable with max height */
+        #detail-participants,
+        #detail-neighbors,
+        #detail-thread-list {
+          max-height: 300px;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        /* Better grid layout for detail sections */
+        .grid.grid-cols-1.md\:grid-cols-2 {
+          grid-template-columns: 1fr !important;
+          gap: 1rem !important;
+        }
+
+        /* Optimize prose content for mobile */
+        .prose {
+          font-size: 0.85rem !important;
+        }
+
+        .prose code {
+          word-break: break-all;
+          overflow-wrap: break-word;
+        }
+
+        /* Prevent horizontal scroll on all containers */
+        article {
+          overflow-x: hidden;
+        }
+
+        /* Better status badges */
+        #results-count {
+          font-size: 0.7rem !important;
+          padding: 0.375rem 0.75rem !important;
+        }
+
+        #index-state {
+          font-size: 0.65rem !important;
+          padding: 0.375rem 0.5rem !important;
+        }
+
+        #clear-filters {
+          padding: 0.5rem 0.75rem !important;
+          font-size: 0.75rem !important;
+        }
+
+        /* Reduce border radius on mobile for cleaner look */
+        .rounded-2xl {
+          border-radius: 1rem !important;
+        }
+
+        .rounded-xl {
+          border-radius: 0.75rem !important;
+        }
+
+        /* Loading overlay adjustments */
+        #loading-overlay {
+          padding: 1rem;
+        }
+      }
+
+      /* Extra small devices (phones in portrait) */
+      @media (max-width: 480px) {
+        /* Further reduce padding */
+        .glass {
+          padding: 0.75rem !important;
+        }
+
+        /* Header compact mode */
+        header .glass {
+          padding: 1rem !important;
+        }
+
+        /* Stack header items */
+        header .glass > div {
+          flex-direction: column !important;
+          align-items: flex-start !important;
+        }
+
+        /* Hide helper pills to save space */
+        header .pill {
+          font-size: 0.65rem !important;
+          padding: 0.375rem 0.75rem !important;
+        }
+
+        /* Compact stats cards */
+        .glass.group {
+          padding: 0.75rem !important;
+        }
+
+        /* Results count badge */
+        #results-count {
+          font-size: 0.65rem !important;
+          padding: 0.375rem 0.75rem !important;
+        }
+
+        /* Smaller logo */
+        .gradient-bar {
+          width: 2.5rem !important;
+          height: 2.5rem !important;
+          font-size: 0.875rem !important;
+        }
+      }
+
+      /* Landscape phone optimization */
+      @media (max-width: 896px) and (orientation: landscape) {
+        aside {
+          max-height: 70vh;
+        }
+
+        #results-list {
+          max-height: 55vh;
+        }
+      }
+
+      /* Touch device optimizations */
+      @media (hover: none) and (pointer: coarse) {
+        /* Remove hover effects on touch devices */
+        .card-hover:hover {
+          transform: none;
+        }
+
+        /* But keep active/tap feedback */
+        .card-hover:active {
+          transform: scale(0.98);
+          opacity: 0.9;
+        }
+
+        button:active {
+          opacity: 0.8;
+        }
+
+        /* Larger tap targets */
+        button, a, input, label {
+          min-height: 44px;
+          min-width: 44px;
+        }
+      }
+    </style>
+  </head>
+  <body class="text-slate-100">
+    <div id="loading-overlay" class="fixed inset-0 z-50 hidden flex items-center justify-center backdrop-blur-xl bg-black/80 transition-all duration-500">
+      <div class="text-center space-y-8 fade-in px-6">
+        <div class="relative w-24 h-24 mx-auto">
+          <!-- Outer glow ring -->
+          <div class="absolute inset-0 rounded-full bg-gradient-to-br from-emerald-400/30 to-blue-500/30 blur-xl animate-pulse"></div>
+          <!-- Background circle -->
+          <div class="absolute inset-0 rounded-full border-[3px] border-white/10"></div>
+          <!-- Animated gradient spinner -->
+          <div class="absolute inset-0 rounded-full border-[3px] border-transparent bg-gradient-to-r from-emerald-400 via-blue-500 to-purple-500 animate-spin" style="mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #fff 0); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #fff 0);"></div>
+          <!-- Inner glow -->
+          <div class="absolute inset-3 rounded-full bg-gradient-to-br from-emerald-400/25 to-blue-500/25 animate-pulse"></div>
+          <!-- Center dot -->
+          <div class="absolute inset-0 flex items-center justify-center">
+            <div class="w-2 h-2 rounded-full bg-gradient-to-br from-emerald-400 to-blue-500"></div>
+          </div>
+        </div>
+        <div class="space-y-3">
+          <h3 class="text-lg font-semibold text-white tracking-tight">Preparing workspace</h3>
+          <p class="text-sm text-slate-300/80 leading-relaxed max-w-xs mx-auto">Indexing 20,000+ documents<br/>for instant full-text search...</p>
+          <!-- Progress indicator -->
+          <div class="flex justify-center gap-1.5 pt-2">
+            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style="animation-delay: 0ms;"></div>
+            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style="animation-delay: 150ms;"></div>
+            <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" style="animation-delay: 300ms;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="min-h-screen flex flex-col">
+      <header class="px-4 sm:px-6 lg:px-10 pt-6 pb-4 fade-in">
+        <div class="mx-auto max-w-7xl">
+          <div class="glass rounded-2xl px-6 py-5 flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
+            <div class="space-y-1.5">
+              <div class="flex items-center gap-3.5">
+                <span class="inline-flex h-11 w-11 items-center justify-center rounded-xl gradient-bar text-slate-900 font-bold text-base shadow-lg">EE</span>
+                <div>
+                  <h1 class="text-2xl font-bold tracking-tight bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent">Epstein Email Explorer</h1>
+                  <p class="text-[0.85rem] text-slate-400 mt-0.5 hidden sm:block">Client-side, zero-backend search over 20k+ FOIA documents</p>
+                </div>
+              </div>
+            </div>
+            <div class="hidden sm:flex flex-wrap gap-2 text-[0.75rem] text-slate-300">
+              <span class="pill rounded-full px-3.5 py-1.5 font-medium">Type <code class="text-emerald-300 font-semibold">subject:"manifest"</code></span>
+              <span class="pill rounded-full px-3.5 py-1.5 font-medium">Combine <code class="text-sky-300 font-semibold">AND/OR/NOT</code></span>
+              <span class="pill rounded-full px-3.5 py-1.5 font-medium">Dates <code class="text-indigo-300 font-semibold">date:[...]</code></span>
+            </div>
+          </div>
+
+          <div class="mt-5 hidden md:grid gap-4 grid-cols-1 md:grid-cols-3">
+            <div class="glass rounded-xl px-5 py-4 flex items-center gap-4 group">
+              <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-emerald-400/25 to-emerald-500/15 text-emerald-300 flex items-center justify-center font-bold text-xl shadow-lg group-hover:shadow-emerald-500/20 transition-shadow">Σ</div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Total Documents</p>
+                <p id="stats-doc-count" class="text-2xl font-bold text-slate-100 tabular-nums">—</p>
+              </div>
+            </div>
+            <div class="glass rounded-xl px-5 py-4 flex items-center gap-4 group">
+              <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-sky-400/25 to-sky-500/15 text-sky-300 flex items-center justify-center font-bold text-xl shadow-lg group-hover:shadow-sky-500/20 transition-shadow">👥</div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Participants</p>
+                <p id="stats-people-count" class="text-2xl font-bold text-slate-100 tabular-nums">—</p>
+              </div>
+            </div>
+            <div class="glass rounded-xl px-5 py-4 flex items-center gap-4 group">
+              <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-indigo-400/25 to-indigo-500/15 text-indigo-300 flex items-center justify-center font-bold text-xl shadow-lg group-hover:shadow-indigo-500/20 transition-shadow">⏳</div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs uppercase tracking-wider text-slate-400 font-semibold mb-1">Date Range</p>
+                <p id="stats-date-range" class="text-base font-semibold text-slate-100 tabular-nums truncate">—</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="flex-1 flex overflow-hidden px-4 sm:px-6 lg:px-10 pb-6">
+        <!-- Left pane: search / people -->
+        <aside
+          id="sidebar-panel"
+          class="w-full md:w-[420px] flex flex-col gap-3"
+        >
+          <div class="glass rounded-2xl p-4 md:p-5 border border-slate-800/80 shadow-2xl">
+            <div class="flex items-center gap-2 mb-4">
+              <div class="flex flex-1 rounded-lg p-1 bg-slate-950/50 border border-slate-800/60">
+                <button
+                  id="mode-docs"
+                  type="button"
+                  class="flex-1 py-2 text-[0.75rem] rounded-md bg-emerald-500/90 text-white font-bold shadow-lg transition-all duration-200 text-center"
+                >
+                  📄 Docs
+                </button>
+                <button
+                  id="mode-people"
+                  type="button"
+                  class="flex-1 py-2 text-[0.75rem] rounded-md text-slate-400 hover:text-slate-200 font-semibold transition-all duration-200 text-center"
+                >
+                  👥 People
+                </button>
+              </div>
+              <span
+                id="results-count"
+                class="text-[0.65rem] text-slate-400 font-medium whitespace-nowrap px-2.5 py-1.5 bg-slate-900/50 rounded-lg border border-slate-800 tabular-nums"
+              >
+                Loading…
+              </span>
+            </div>
+
+            <!-- Documents panel -->
+            <div id="panel-docs" class="flex-1 flex flex-col gap-4 overflow-hidden">
+              <div class="space-y-3">
+                <label
+                  for="search-query"
+                  class="block text-[0.7rem] uppercase tracking-wider text-slate-400 font-bold"
+                  >🔍 Search Query</label
+                >
+                <div class="relative group">
+                  <span class="absolute left-4 top-1/2 -translate-y-1/2 text-xl group-focus-within:scale-110 transition-transform">🔍</span>
+                  <input
+                    id="search-query"
+                    type="text"
+                    placeholder='e.g. "flight manifest" AND from:epstein'
+                    class="w-full text-sm rounded-xl bg-slate-900/80 border-2 border-slate-700 pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 placeholder:text-slate-500 transition-all duration-200 shadow-inner font-medium"
+                  />
+                  <div class="absolute inset-0 rounded-xl bg-gradient-to-r from-emerald-500/5 to-blue-500/5 pointer-events-none opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
+                </div>
+                <p id="index-hint" class="text-[0.7rem] text-amber-300/80 hidden">
+                  Full-text indexing in progress. Body-only searches may be limited for a moment.
+                </p>
+                <div class="flex flex-wrap gap-1.5 text-[0.7rem]">
+                  <span class="pill rounded-md px-2.5 py-1 font-mono text-emerald-300">subject:</span>
+                  <span class="pill rounded-md px-2.5 py-1 font-mono text-sky-300">from:</span>
+                  <span class="pill rounded-md px-2.5 py-1 font-mono text-indigo-300">to:</span>
+                  <span class="pill rounded-md px-2.5 py-1 font-mono text-violet-300">body:</span>
+                  <span class="pill rounded-md px-2.5 py-1 font-mono text-pink-300 text-[0.65rem]">date:[YYYY-MM-DD TO ...]</span>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-1 gap-4">
+                <div class="glass rounded-xl border border-slate-800/80 p-4 bg-slate-900/30 transition-all duration-300">
+                  <div id="filters-header" class="flex items-center justify-between cursor-pointer select-none">
+                    <span class="text-[0.7rem] uppercase tracking-wider text-slate-400 font-bold flex items-center gap-2">
+                      <span class="text-base">⚡</span> Filters
+                      <span id="filters-chevron" class="text-xs text-slate-500 transition-transform duration-200">▼</span>
+                    </span>
+                    <button
+                      id="clear-filters"
+                      type="button"
+                      class="text-[0.7rem] text-emerald-400 hover:text-emerald-300 font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-all duration-200 z-10"
+                    >
+                      Clear All
+                    </button>
+                  </div>
+                  <div id="filters-body" class="space-y-3.5 mt-3.5 overflow-hidden transition-all duration-300">
+                    <div class="space-y-1.5">
+                      <label class="text-[0.65rem] uppercase tracking-wider text-slate-400 font-semibold block">📄 Filename</label>
+                      <input
+                        id="filename-filter"
+                        type="text"
+                        placeholder="Filter by filename..."
+                        class="w-full text-xs rounded-lg bg-slate-900/80 border border-slate-700 px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 placeholder:text-slate-500 transition-all shadow-inner"
+                      />
+                    </div>
+                    <div class="space-y-2">
+                      <label class="text-[0.65rem] uppercase tracking-wider text-slate-400 font-semibold block">📅 Date Range</label>
+                      <div class="flex items-center gap-2.5">
+                        <input
+                          id="date-from"
+                          type="date"
+                          class="flex-1 text-[0.7rem] rounded-lg bg-slate-900/80 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 transition-all shadow-inner"
+                        />
+                        <span class="text-slate-500 font-bold">→</span>
+                        <input
+                          id="date-to"
+                          type="date"
+                          class="flex-1 text-[0.7rem] rounded-lg bg-slate-900/80 border border-slate-700 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 transition-all shadow-inner"
+                        />
+                      </div>
+                    </div>
+                    <div class="space-y-2">
+                      <div class="flex items-center justify-between">
+                        <label class="text-[0.65rem] uppercase tracking-wider text-slate-400 font-semibold">🏷️ Document Types</label>
+                      </div>
+                      <div
+                        id="kinds-filter"
+                        class="flex flex-wrap gap-1.5 text-[0.7rem]"
+                      ></div>
+                    </div>
+                    <div class="space-y-2">
+                      <div class="flex items-center justify-between">
+                        <label class="text-[0.65rem] uppercase tracking-wider text-slate-400 font-semibold">📊 Timeline Distribution</label>
+                      </div>
+                      <div id="timeline" class="h-16 flex items-end bg-slate-950/40 rounded-lg p-2 border border-slate-800/50"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="glass rounded-xl border border-slate-800/80 p-3 flex-1 overflow-hidden flex flex-col bg-slate-900/20">
+                <div class="flex items-center justify-between px-2 pb-3 border-b border-slate-800/50">
+                  <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">📋 Results</span>
+                  <span class="text-[0.7rem] text-slate-500 font-medium px-2 py-1 bg-slate-950/50 rounded-md">Top 200 shown</span>
+                </div>
+                <div class="flex-1 overflow-y-auto px-1 pt-3 pb-2" id="results-list"></div>
+              </div>
+            </div>
+
+            <!-- People panel -->
+            <div
+              id="panel-people"
+              class="hidden flex-1 flex flex-col gap-4 overflow-hidden"
+            >
+              <div class="glass rounded-xl border border-slate-800/80 p-4 space-y-3 bg-slate-900/30">
+                <label
+                  for="people-search"
+                  class="block text-[0.7rem] uppercase tracking-wider text-slate-400 font-bold flex items-center gap-2"
+                  ><span class="text-base">👥</span> Search People</label
+                >
+                <div class="relative group">
+                  <span class="absolute left-4 top-1/2 -translate-y-1/2 text-lg group-focus-within:scale-110 transition-transform">🔍</span>
+                  <input
+                    id="people-search"
+                    type="text"
+                    placeholder="Search by name or email..."
+                    class="w-full text-sm rounded-xl bg-slate-900/80 border-2 border-slate-700 pl-11 pr-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-400/50 focus:border-emerald-400/50 placeholder:text-slate-500 transition-all duration-200 shadow-inner font-medium"
+                  />
+                </div>
+                <p class="text-[0.7rem] text-slate-400 flex items-center gap-2 bg-slate-950/40 rounded-lg px-3 py-2 border border-slate-800/50">
+                  <span class="text-sm">💡</span>
+                  Click a person to filter documents they participate in.
+                </p>
+              </div>
+              <div class="glass rounded-xl border border-slate-800/80 p-3 flex-1 overflow-hidden flex flex-col bg-slate-900/20">
+                <div class="flex items-center justify-between px-2 pb-3 border-b border-slate-800/50">
+                  <span class="text-xs font-bold text-slate-300 uppercase tracking-wider">👥 Participants</span>
+                  <span class="text-[0.7rem] text-slate-500 font-medium px-2 py-1 bg-slate-950/50 rounded-md">Top 200</span>
+                </div>
+                <div
+                  id="people-list"
+                  class="flex-1 overflow-y-auto px-1 pt-3 pb-2 text-xs space-y-2"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Right pane: detail view -->
+        <section id="detail-panel" class="flex-1 flex flex-col overflow-hidden ml-0 md:ml-4 hidden md:flex relative">
+          <!-- Mobile Sticky Header -->
+          <div class="md:hidden sticky top-0 z-20 flex items-center gap-3 px-4 py-3 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-lg shrink-0">
+            <button id="mobile-back-btn" class="flex items-center justify-center w-8 h-8 rounded-full bg-slate-800 text-slate-300 active:scale-95 transition-transform">
+              <span class="text-lg leading-none">←</span>
+            </button>
+            <span class="font-semibold text-slate-200 text-sm tracking-tight">Message Detail</span>
+          </div>
+          
+          <div id="detail-content" class="glass flex-1 overflow-y-auto px-4 py-5 md:px-6 md:py-6 rounded-none md:rounded-2xl border-x-0 md:border border-slate-800/80 shadow-2xl">
+            <div class="mx-auto max-w-3xl">
+              <div class="flex items-start justify-between gap-4 mb-4">
+                <div class="flex-1 min-w-0">
+                  <h2
+                    id="detail-title"
+                    class="text-2xl font-bold tracking-tight mb-2 bg-gradient-to-r from-slate-100 to-slate-300 bg-clip-text text-transparent"
+                  >
+                    Select a message
+                  </h2>
+                  <div
+                    id="detail-meta"
+                    class="text-xs text-slate-400 mb-2 break-words space-y-0.5 leading-relaxed"
+                  ></div>
+                </div>
+                <div class="flex-shrink-0">
+                  <div class="rounded-full px-4 py-2 text-[0.7rem] bg-gradient-to-r from-emerald-500/20 to-blue-500/20 border border-emerald-400/30 text-emerald-300 font-bold shadow-lg flex items-center gap-2">
+                    <span class="text-xs">🔒</span> Client-side only
+                  </div>
+                </div>
+              </div>
+              <div
+                id="detail-chunk-nav"
+                class="flex items-center gap-2 mb-5 text-xs text-slate-300 p-3 bg-slate-900/40 rounded-lg border border-slate-800/50"
+              ></div>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+                <div class="glass rounded-xl p-4 border border-slate-800/60 bg-slate-900/30">
+                  <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
+                    <span class="text-sm">👥</span> Participants
+                  </h3>
+                  <div
+                    id="detail-participants"
+                    class="flex flex-wrap gap-1.5 text-[0.7rem]"
+                  ></div>
+                </div>
+                <div class="glass rounded-xl p-4 border border-slate-800/60 bg-slate-900/30">
+                  <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
+                    <span class="text-sm">🔗</span> Similar Documents
+                  </h3>
+                  <div
+                    id="detail-neighbors"
+                    class="space-y-1.5 text-[0.7rem]"
+                  ></div>
+                </div>
+              </div>
+
+              <div class="mb-6 glass rounded-xl p-4 border border-slate-800/60 bg-slate-900/30">
+                <h3 class="text-xs font-bold uppercase tracking-wider text-slate-300 mb-3 flex items-center gap-2">
+                  <span class="text-sm">💬</span> Email Thread
+                </h3>
+                <div
+                  id="detail-thread-header"
+                  class="text-[0.7rem] text-slate-400 mb-3"
+                ></div>
+                <div
+                  id="detail-thread-list"
+                  class="space-y-1.5 text-[0.7rem]"
+                ></div>
+              </div>
+
+              <article
+                id="detail-body"
+                class="prose prose-invert max-w-none prose-sm bg-slate-950/70 border border-slate-800 rounded-xl p-6 whitespace-pre-wrap text-[0.8rem] leading-relaxed shadow-inner min-h-[200px]"
+              ></article>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      (() => {
+        const state = {
+          docs: [],
+          docsById: new Map(),
+          allDocIds: [],
+          allKinds: [],
+          activeKinds: new Set(),
+          people: [],
+          peopleByAddress: new Map(),
+          timeline: [],
+          neighborsById: new Map(),
+          threadsById: new Map(),
+          docTextCache: new Map(),
+          searchWorker: null,
+          workerInitPromise: null,
+          pendingWorkerRequests: new Map(),
+          nextRequestId: 1,
+          termCache: new Map(),
+          queryText: "",
+          selectedPerson: null,
+          selectedDomain: null,
+          currentResults: [],
+          selectedDocId: null,
+          mode: "docs",
+          indexState: "lite",
+        };
+
+        const elements = {};
+        let searchDebounce = null;
+        let searchGeneration = 0;
+
+        function cacheElements() {
+          elements.queryInput = document.getElementById("search-query");
+          elements.resultsList = document.getElementById("results-list");
+          elements.resultsCount = document.getElementById("results-count");
+          elements.indexState = document.getElementById("index-state");
+          elements.indexHint = document.getElementById("index-hint");
+          elements.kindsContainer = document.getElementById("kinds-filter");
+          elements.filenameInput = document.getElementById("filename-filter");
+          elements.dateFromInput = document.getElementById("date-from");
+          elements.dateToInput = document.getElementById("date-to");
+          elements.timeline = document.getElementById("timeline");
+          elements.modeDocsBtn = document.getElementById("mode-docs");
+          elements.modePeopleBtn = document.getElementById("mode-people");
+          elements.panelDocs = document.getElementById("panel-docs");
+          elements.panelPeople = document.getElementById("panel-people");
+          elements.peopleSearchInput = document.getElementById("people-search");
+          elements.peopleList = document.getElementById("people-list");
+          elements.detailTitle = document.getElementById("detail-title");
+          elements.detailMeta = document.getElementById("detail-meta");
+          elements.detailBody = document.getElementById("detail-body");
+          elements.detailParticipants =
+            document.getElementById("detail-participants");
+          elements.detailNeighbors =
+            document.getElementById("detail-neighbors");
+          elements.detailThreadHeader = document.getElementById(
+            "detail-thread-header"
+          );
+          elements.detailThreadList =
+            document.getElementById("detail-thread-list");
+          elements.detailChunkNav =
+            document.getElementById("detail-chunk-nav");
+          elements.clearFiltersBtn =
+            document.getElementById("clear-filters");
+          elements.loadingOverlay = document.getElementById("loading-overlay");
+          elements.statsDocCount = document.getElementById("stats-doc-count");
+          elements.statsPeopleCount = document.getElementById("stats-people-count");
+          elements.statsDateRange = document.getElementById("stats-date-range");
+          elements.sidebarPanel = document.getElementById("sidebar-panel");
+          elements.detailPanel = document.getElementById("detail-panel");
+          elements.detailContent = document.getElementById("detail-content");
+          elements.mobileBackBtn = document.getElementById("mobile-back-btn");
+          elements.filtersHeader = document.getElementById("filters-header");
+          elements.filtersBody = document.getElementById("filters-body");
+          elements.filtersChevron = document.getElementById("filters-chevron");
+        }
+
+        function toggleFilters(forceState) {
+          const body = elements.filtersBody;
+          const chevron = elements.filtersChevron;
+          if (!body || !chevron) return;
+          
+          const isExpanded = !body.classList.contains("h-0") && !body.classList.contains("hidden");
+          const newState = forceState !== undefined ? forceState : !isExpanded;
+
+          if (newState) {
+            body.classList.remove("hidden", "h-0", "opacity-0", "mt-0");
+            body.classList.add("mt-3.5", "opacity-100");
+            chevron.style.transform = "rotate(0deg)";
+          } else {
+            body.classList.add("hidden", "h-0", "opacity-0", "mt-0");
+            body.classList.remove("mt-3.5", "opacity-100");
+            chevron.style.transform = "rotate(-90deg)";
+          }
+        }
+
+        // Track animation timeouts to prevent race conditions
+        let mobileLayoutTimeouts = [];
+
+        function updateMobileLayout() {
+          // Clear any pending animation timeouts to prevent race conditions
+          mobileLayoutTimeouts.forEach(id => clearTimeout(id));
+          mobileLayoutTimeouts = [];
+
+          // Only relevant on mobile
+          if (window.innerWidth >= 768) {
+            if (elements.sidebarPanel) {
+              elements.sidebarPanel.classList.remove("hidden");
+              elements.sidebarPanel.classList.remove("slide-out-left", "slide-in-left");
+            }
+            if (elements.detailPanel) {
+               elements.detailPanel.classList.remove("hidden");
+               elements.detailPanel.classList.add("flex");
+               elements.detailPanel.classList.remove("slide-in-right", "slide-out-right");
+            }
+            return;
+          }
+
+          if (state.selectedDocId) {
+            // Show Detail with animation, Hide List
+            if (elements.sidebarPanel) {
+              elements.sidebarPanel.classList.add("slide-out-left");
+              const timeoutId = setTimeout(() => {
+                elements.sidebarPanel.classList.add("hidden");
+                elements.sidebarPanel.classList.remove("slide-out-left");
+              }, 200);  // Match animation duration
+              mobileLayoutTimeouts.push(timeoutId);
+            }
+            if (elements.detailPanel) {
+               elements.detailPanel.classList.remove("hidden");
+               elements.detailPanel.classList.add("flex", "slide-in-right");
+               const timeoutId = setTimeout(() => {
+                 elements.detailPanel.classList.remove("slide-in-right");
+               }, 200);  // Match animation duration
+               mobileLayoutTimeouts.push(timeoutId);
+            }
+          } else {
+            // Show List with animation, Hide Detail
+            if (elements.sidebarPanel) {
+              elements.sidebarPanel.classList.remove("hidden", "slide-out-left");
+              elements.sidebarPanel.classList.add("slide-in-left");
+              const timeoutId = setTimeout(() => {
+                elements.sidebarPanel.classList.remove("slide-in-left");
+              }, 200);  // Match animation duration
+              mobileLayoutTimeouts.push(timeoutId);
+            }
+            if (elements.detailPanel) {
+               elements.detailPanel.classList.add("slide-out-right");
+               const timeoutId = setTimeout(() => {
+                 elements.detailPanel.classList.add("hidden");
+                 elements.detailPanel.classList.remove("flex", "slide-out-right");
+               }, 200);  // Match animation duration
+               mobileLayoutTimeouts.push(timeoutId);
+            }
+          }
+        }
+
+        function setLoading(show) {
+          state.isLoading = show;
+          if (!elements.loadingOverlay) return;
+          elements.loadingOverlay.classList.toggle("hidden", !show);
+        }
+
+        function renderStats() {
+          const docCount = state.docs?.length || 0;
+          const peopleCount = state.people?.length || 0;
+          const dates = state.docs
+            .map((d) => d.date_key)
+            .filter(Boolean)
+            .sort();
+          const dateRange = dates.length
+            ? `${dates[0]} → ${dates[dates.length - 1]}`
+            : "—";
+          if (elements.statsDocCount)
+            elements.statsDocCount.textContent = docCount.toLocaleString();
+          if (elements.statsPeopleCount)
+            elements.statsPeopleCount.textContent = peopleCount.toLocaleString();
+          if (elements.statsDateRange)
+            elements.statsDateRange.textContent = dateRange;
+        }
+
+        function updateIndexBadge() {
+          if (!elements.indexState) return;
+          if (state.indexState === "full") {
+            elements.indexState.textContent = "full index";
+            elements.indexState.classList.add("text-emerald-300");
+            if (elements.indexHint) elements.indexHint.classList.add("hidden");
+          } else {
+            elements.indexState.textContent = "lite index";
+            elements.indexState.classList.remove("text-emerald-300");
+            if (elements.indexHint) elements.indexHint.classList.remove("hidden");
+          }
+        }
+
+        function setupWorker() {
+          if (state.searchWorker) return;
+          const worker = new Worker("search-worker.js");
+          state.searchWorker = worker;
+
+          worker.onmessage = (event) => {
+            const { type, requestId, ids, error, text, data } = event.data || {};
+            if (type === "full-index-ready") {
+              state.indexState = "full";
+              state.termCache.clear();
+              searchGeneration += 1; // invalidate in-flight generations
+              updateIndexBadge();
+              // refresh search to include body tokens
+              scheduleSearch(0);
+              return;
+            }
+
+            if (type === "full-index-error") {
+              console.error("Full index build failed:", error);
+              if (elements.indexHint) {
+                elements.indexHint.textContent = "Full-text indexing failed. Body search unavailable.";
+                elements.indexHint.style.color = "var(--error)";
+                elements.indexHint.classList.remove("hidden");
+              }
+              return;
+            }
+
+            if (!requestId) return;
+            const entry = state.pendingWorkerRequests.get(requestId);
+            if (!entry) return;
+            state.pendingWorkerRequests.delete(requestId);
+            if (type === "error") {
+              entry.reject(new Error(error || "Worker error"));
+              return;
+            }
+            if (type === "init-complete") {
+              entry.resolve(data || {});
+              return;
+            }
+            if (type === "search-basic-result") {
+              entry.resolve(ids || []);
+              return;
+            }
+            if (type === "text") {
+              entry.resolve(typeof text === "string" ? text : "");
+              return;
+            }
+            entry.resolve(event.data);
+          };
+
+          state.workerInitPromise = sendWorkerRequest("init", {});
+        }
+
+        function ensureWorkerReady() {
+          setupWorker();
+          if (!state.workerInitPromise) {
+            state.workerInitPromise = sendWorkerRequest("init", {});
+          }
+          return state.workerInitPromise;
+        }
+
+        function sendWorkerRequest(type, payload) {
+          if (!state.searchWorker) throw new Error("Search worker not initialised");
+          const requestId = state.nextRequestId++;
+          const p = new Promise((resolve, reject) => {
+            state.pendingWorkerRequests.set(requestId, { resolve, reject });
+          });
+          state.searchWorker.postMessage({ type, requestId, payload });
+          return p;
+        }
+
+        async function searchLeaf(field, text) {
+          const f = (field || "all").toLowerCase();
+          const key = `${f}|${(text || "").toLowerCase()}`;
+          if (state.termCache.has(key)) return state.termCache.get(key);
+
+          await ensureWorkerReady();
+
+          let mappedField = null;
+          if (f === "subject" || f === "from" || f === "to" || f === "domains") {
+            mappedField = f;
+          } else if (
+            f === "body" ||
+            f === "text" ||
+            f === "content" ||
+            f === "search_text"
+          ) {
+            // During lite index, fall back to all-fields so users don't see empty results
+            mappedField = state.indexState === "lite" ? null : "text";
+          } else if (f === "all") {
+            mappedField = null;
+          }
+
+          const ids = await sendWorkerRequest("search-basic", {
+            field: mappedField,
+            query: text,
+            limit: 500,
+          });
+
+          const map = new Map();
+          ids.forEach((id, idx) => {
+            const sid = String(id);
+            const score = 1 / (1 + idx);
+            map.set(sid, score);
+          });
+          state.termCache.set(key, map);
+          return map;
+        }
+
+        function tokenizeQuery(input) {
+          const tokens = [];
+          const src = input || "";
+          const len = src.length;
+          let i = 0;
+
+          const isSpace = (c) => /\s/.test(c);
+
+          while (i < len) {
+            const c = src[i];
+            if (isSpace(c)) {
+              i += 1;
+              continue;
+            }
+            if ("()[]:".includes(c)) {
+              const type =
+                c === "("
+                  ? "LPAREN"
+                  : c === ")"
+                  ? "RPAREN"
+                  : c === "["
+                  ? "LBRACKET"
+                  : c === "]"
+                  ? "RBRACKET"
+                  : "COLON";
+              tokens.push({ type, value: c });
+              i += 1;
+              continue;
+            }
+            if (c === '"') {
+              let j = i + 1;
+              let buf = "";
+              while (j < len && src[j] !== '"') {
+                if (src[j] === "\\" && j + 1 < len) {
+                  buf += src[j + 1];
+                  j += 2;
+                } else {
+                  buf += src[j];
+                  j += 1;
+                }
+              }
+              i = j < len ? j + 1 : len;
+              tokens.push({ type: "PHRASE", value: buf });
+              continue;
+            }
+            let j = i;
+            while (
+              j < len &&
+              !isSpace(src[j]) &&
+              !("()[]:\"".includes(src[j]))
+            ) {
+              j += 1;
+            }
+            const raw = src.slice(i, j);
+            const upper = raw.toUpperCase();
+            if (upper === "AND" || upper === "OR" || upper === "NOT" || upper === "TO") {
+              tokens.push({ type: upper, value: upper });
+            } else {
+              tokens.push({ type: "WORD", value: raw });
+            }
+            i = j;
+          }
+          return tokens;
+        }
+
+        function parseQueryString(query) {
+          const tokens = tokenizeQuery(query || "");
+          let pos = 0;
+
+          const peek = () => tokens[pos] || null;
+          const consume = (expectedType) => {
+            const tok = tokens[pos] || null;
+            if (!tok) return null;
+            if (expectedType && tok.type !== expectedType) return null;
+            pos += 1;
+            return tok;
+          };
+
+          const isTermStart = (tok) =>
+            !!tok &&
+            (tok.type === "WORD" ||
+              tok.type === "PHRASE" ||
+              tok.type === "LPAREN");
+
+          function parseFieldExpression(fieldName) {
+            const tok = peek();
+            if (!tok) {
+              return { type: "term", field: fieldName, value: "" };
+            }
+            if (fieldName === "date") {
+              if (tok.type === "LBRACKET") {
+                consume("LBRACKET");
+                const startTok = peek();
+                let startVal = null;
+                if (startTok && (startTok.type === "WORD" || startTok.type === "PHRASE")) {
+                  consume(startTok.type);
+                  startVal = startTok.value;
+                }
+                const maybeTo = peek();
+                if (maybeTo && maybeTo.type === "TO") consume("TO");
+                const endTok = peek();
+                let endVal = null;
+                if (endTok && (endTok.type === "WORD" || endTok.type === "PHRASE")) {
+                  consume(endTok.type);
+                  endVal = endTok.value;
+                }
+                if (peek() && peek().type === "RBRACKET") consume("RBRACKET");
+                return {
+                  type: "filter",
+                  filter: "date_range",
+                  from: startVal || null,
+                  to: endVal || null,
+                };
+              }
+            }
+            consume(tok.type);
+            const value = tok.value;
+            const searchFieldNames = [
+              "subject",
+              "from",
+              "to",
+              "body",
+              "text",
+              "content",
+            ];
+            if (searchFieldNames.includes(fieldName)) {
+              let mappedField = fieldName;
+              if (
+                mappedField === "body" ||
+                mappedField === "text" ||
+                mappedField === "content"
+              ) {
+                mappedField = "search_text";
+              }
+              return { type: "term", field: mappedField, value };
+            }
+            const participantFields = ["participant", "person", "people"];
+            if (participantFields.includes(fieldName)) {
+              return { type: "filter", filter: "participant", value };
+            }
+            if (fieldName === "domain") {
+              return { type: "filter", filter: "domain", value };
+            }
+            if (fieldName === "filename" || fieldName === "file") {
+              return { type: "filter", filter: "filename", value };
+            }
+            if (fieldName === "kind" || fieldName === "type") {
+              return { type: "filter", filter: "kind", value };
+            }
+            return { type: "term", field: fieldName, value };
+          }
+
+          function parsePrimary() {
+            const tok = peek();
+            if (!tok) return null;
+            if (tok.type === "LPAREN") {
+              consume("LPAREN");
+              const expr = parseOr();
+              if (peek() && peek().type === "RPAREN") consume("RPAREN");
+              return expr;
+            }
+            if (tok.type === "WORD") {
+              const next = tokens[pos + 1];
+              if (next && next.type === "COLON") {
+                const fieldName = tok.value.toLowerCase();
+                consume("WORD");
+                consume("COLON");
+                return parseFieldExpression(fieldName);
+              }
+            }
+            consume(tok.type);
+            return { type: "term", field: null, value: tok.value };
+          }
+
+          function parseNot() {
+            let negate = false;
+            while (true) {
+              const tok = peek();
+              if (tok && tok.type === "NOT") {
+                consume("NOT");
+                negate = !negate;
+              } else {
+                break;
+              }
+            }
+            const operand = parsePrimary();
+            if (!operand) return null;
+            if (negate) return { type: "not", node: operand };
+            return operand;
+          }
+
+          function parseAnd() {
+            let node = parseNot();
+            while (true) {
+              const tok = peek();
+              if (!tok) break;
+              if (tok.type === "AND") {
+                consume("AND");
+                const rhs = parseNot();
+                if (!rhs) break;
+                node = { type: "and", left: node, right: rhs };
+              } else if (tok.type === "OR" || tok.type === "RPAREN") {
+                break;
+              } else if (isTermStart(tok)) {
+                const rhs = parseNot();
+                if (!rhs) break;
+                node = { type: "and", left: node, right: rhs };
+              } else {
+                break;
+              }
+            }
+            return node;
+          }
+
+          function parseOr() {
+            let node = parseAnd();
+            while (true) {
+              const tok = peek();
+              if (!tok || tok.type !== "OR") break;
+              consume("OR");
+              const rhs = parseAnd();
+              if (!rhs) break;
+              node = { type: "or", left: node, right: rhs };
+            }
+            return node;
+          }
+
+          return parseOr();
+        }
+
+        function buildFilterMap(filterNode) {
+          const kind = filterNode.filter;
+          const map = new Map();
+          const valueRaw = (filterNode.value || "").toLowerCase();
+
+          if (kind === "date_range") {
+            const from = filterNode.from ? filterNode.from.slice(0, 10) : null;
+            const to = filterNode.to ? filterNode.to.slice(0, 10) : null;
+            for (const doc of state.docs) {
+              const dk = doc.date_key;
+              if (!dk) continue;
+              if (from && dk < from) continue;
+              if (to && dk > to) continue;
+              map.set(String(doc.id), 1);
+            }
+            return map;
+          }
+
+          if (!valueRaw) return map;
+
+          if (kind === "participant") {
+            for (const doc of state.docs) {
+              const participants = doc.participants || [];
+              const match = participants.some((addr) =>
+                addr.toLowerCase().includes(valueRaw)
+              );
+              if (match) map.set(String(doc.id), 1);
+            }
+          } else if (kind === "domain") {
+            for (const doc of state.docs) {
+              const domains = doc.domains || [];
+              const match = domains.some((d) =>
+                (d || "").toLowerCase().includes(valueRaw)
+              );
+              if (match) map.set(String(doc.id), 1);
+            }
+          } else if (kind === "filename") {
+            for (const doc of state.docs) {
+              const fn = (doc.filename || "").toLowerCase();
+              if (fn.includes(valueRaw)) map.set(String(doc.id), 1);
+            }
+          } else if (kind === "kind") {
+            for (const doc of state.docs) {
+              const k = (doc.kind || "").toLowerCase();
+              if (k.includes(valueRaw)) map.set(String(doc.id), 1);
+            }
+          }
+          return map;
+        }
+
+        async function evaluateAst(ast) {
+          if (!ast) {
+            const map = new Map();
+            for (const id of state.allDocIds) {
+              map.set(String(id), 1);
+            }
+            return map;
+          }
+
+          switch (ast.type) {
+            case "term": {
+              const text = ast.value;
+              if (!text) {
+                const map = new Map();
+                for (const id of state.allDocIds) {
+                  map.set(String(id), 1);
+                }
+                return map;
+              }
+              return searchLeaf(ast.field, text);
+            }
+            case "filter":
+              return buildFilterMap(ast);
+            case "and": {
+              const left = await evaluateAst(ast.left);
+              const right = await evaluateAst(ast.right);
+              const result = new Map();
+              for (const [id, scoreL] of left.entries()) {
+                if (right.has(id)) {
+                  const scoreR = right.get(id);
+                  const score = Math.max(scoreL, scoreR);
+                  result.set(id, score);
+                }
+              }
+              return result;
+            }
+            case "or": {
+              const left = await evaluateAst(ast.left);
+              const right = await evaluateAst(ast.right);
+              const result = new Map(left);
+              for (const [id, scoreR] of right.entries()) {
+                const scoreL = result.get(id) || 0;
+                if (scoreR > scoreL) result.set(id, scoreR);
+              }
+              return result;
+            }
+            case "not": {
+              const inner = await evaluateAst(ast.node);
+              const result = new Map();
+              for (const id of state.allDocIds) {
+                const sid = String(id);
+                if (!inner.has(sid)) result.set(sid, 1);
+              }
+              return result;
+            }
+            default:
+              return new Map();
+          }
+        }
+
+        function applyUiFilters(resultMap) {
+          const rows = [];
+          const activeKinds = state.activeKinds;
+          const filenameFilter =
+            (elements.filenameInput.value || "").toLowerCase();
+          const dateFrom = elements.dateFromInput.value || null;
+          const dateTo = elements.dateToInput.value || null;
+          const selectedPerson = state.selectedPerson;
+          const selectedDomain = state.selectedDomain;
+
+          const hasSearch = resultMap && resultMap.size > 0;
+          const baseIds = hasSearch
+            ? Array.from(resultMap.keys())
+            : state.allDocIds.map(String);
+
+          for (const id of baseIds) {
+            const doc = state.docsById.get(String(id));
+            if (!doc) continue;
+            let score = hasSearch ? resultMap.get(String(id)) || 0.0001 : 0.0001;
+
+            if (activeKinds && activeKinds.size && !activeKinds.has(doc.kind))
+              continue;
+
+            if (filenameFilter) {
+              const fn = (doc.filename || "").toLowerCase();
+              if (!fn.includes(filenameFilter)) continue;
+            }
+
+            if (dateFrom || dateTo) {
+              const dk = doc.date_key;
+              if (!dk) continue;
+              if (dateFrom && dk < dateFrom) continue;
+              if (dateTo && dk > dateTo) continue;
+            }
+
+            if (selectedPerson) {
+              const participants = doc.participants || [];
+              if (!participants.includes(selectedPerson)) continue;
+            }
+
+            if (selectedDomain) {
+              const domains = doc.domains || [];
+              if (!domains.includes(selectedDomain)) continue;
+            }
+
+            rows.push({ doc, score });
+          }
+
+          rows.sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            const da = a.doc.date_key || "";
+            const db = b.doc.date_key || "";
+            if (da !== db) return db.localeCompare(da);
+            return (a.doc.id || 0) - (b.doc.id || 0);
+          });
+
+          return rows;
+        }
+
+        function renderResultsList() {
+          const list = elements.resultsList;
+          list.innerHTML = "";
+          const results = state.currentResults || [];
+
+          if (!results.length) {
+            const emptyState = document.createElement("div");
+            emptyState.className = "flex flex-col items-center justify-center py-16 px-6 text-center fade-in";
+            emptyState.innerHTML = `
+              <div class="relative mb-6">
+                <div class="absolute inset-0 bg-gradient-to-br from-emerald-400/20 to-blue-500/20 blur-2xl opacity-50"></div>
+                <div class="relative text-6xl opacity-60">🔍</div>
+              </div>
+              <h3 class="text-base font-semibold text-slate-200 mb-2 tracking-tight">No results found</h3>
+              <p class="text-sm text-slate-400 leading-relaxed max-w-xs">Try adjusting your search query or filters to find what you're looking for</p>
+            `;
+            list.appendChild(emptyState);
+            return;
+          }
+
+          const maxShown = 200;
+          results.slice(0, maxShown).forEach((doc, index) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.dataset.docId = String(doc.id);
+            const isSelected = String(state.selectedDocId) === String(doc.id);
+
+            let className = "block w-full text-left px-4 py-3.5 rounded-xl mb-2 border border-slate-800/80 bg-slate-900/70 card-hover transition-all duration-200 fade-in";
+
+            if (isSelected) {
+              className += " selected ring-2 ring-emerald-400/70 bg-gradient-to-r from-emerald-500/10 to-blue-500/5 border-emerald-500/50";
+            } else {
+              className += " hover:border-slate-700/90";
+            }
+
+            btn.className = className;
+            btn.style.animationDelay = `${Math.min(index * 30, 300)}ms`;
+
+            const title = document.createElement("div");
+            title.className = "text-[0.95rem] font-bold truncate mb-1 text-slate-100";
+            title.textContent = doc.subject || "(No subject)";
+
+            const meta = document.createElement("div");
+            meta.className = "text-[0.7rem] text-slate-400 truncate flex flex-wrap gap-1.5 mb-2";
+            const metaParts = [];
+            if (doc.date_key) metaParts.push(`📅 ${doc.date_key}`);
+            if (doc.from) metaParts.push(`👤 ${doc.from}`);
+            if (doc.filename) metaParts.push(`📄 ${doc.filename}`);
+            metaParts.forEach((part, idx) => {
+              const span = document.createElement("span");
+              span.textContent = part;
+              meta.appendChild(span);
+              if (idx < metaParts.length - 1) {
+                const separator = document.createElement("span");
+                separator.className = "text-slate-600";
+                separator.textContent = "•";
+                meta.appendChild(separator);
+              }
+            });
+
+            const preview = document.createElement("div");
+            preview.className =
+              "text-[0.75rem] text-slate-300/90 line-clamp-2 leading-relaxed";
+            preview.textContent = doc.preview || "";
+
+            btn.appendChild(title);
+            btn.appendChild(meta);
+            if (doc.preview) btn.appendChild(preview);
+            btn.addEventListener("click", () => selectDoc(doc.id));
+
+            list.appendChild(btn);
+          });
+        }
+
+        function updateResultCount() {
+          const total = state.currentResults ? state.currentResults.length : 0;
+          elements.resultsCount.textContent = `${total} result${
+            total === 1 ? "" : "s"
+          }`;
+        }
+
+        function renderKindsFilter() {
+          const container = elements.kindsContainer;
+          container.innerHTML = "";
+          if (!state.allKinds || !state.allKinds.length) return;
+
+          state.allKinds.forEach((kind) => {
+            const id = `kind-${kind.replace(/[^a-z0-9]+/gi, "-")}`;
+            const label = document.createElement("label");
+            const isChecked = state.activeKinds.has(kind);
+            label.className =
+              "inline-flex items-center gap-2 text-[0.7rem] rounded-lg px-3 py-2 cursor-pointer transition-all duration-200 font-medium border " +
+              (isChecked
+                ? "bg-emerald-500/20 border-emerald-400/50 text-emerald-300 shadow-sm shadow-emerald-500/20"
+                : "bg-slate-900/70 border-slate-800 text-slate-300 hover:bg-slate-800/90 hover:border-slate-700");
+
+            const inp = document.createElement("input");
+            inp.type = "checkbox";
+            inp.className = "accent-emerald-400 w-3.5 h-3.5 cursor-pointer transition-transform hover:scale-110";
+            inp.id = id;
+            inp.checked = isChecked;
+            inp.addEventListener("change", () => {
+              if (inp.checked) state.activeKinds.add(kind);
+              else state.activeKinds.delete(kind);
+              scheduleSearch();
+
+              // Update mobile UI elements
+              if (state.updateFilterBadge) state.updateFilterBadge();
+              if (state.renderActiveFilterChips) state.renderActiveFilterChips();
+            });
+
+            const span = document.createElement("span");
+            span.textContent = kind;
+
+            label.appendChild(inp);
+            label.appendChild(span);
+            container.appendChild(label);
+          });
+        }
+
+        function renderTimeline() {
+          const container = elements.timeline;
+          container.innerHTML = "";
+          const buckets = state.timeline || [];
+          if (!buckets.length) {
+            container.innerHTML = `
+              <div class="flex items-center justify-center h-full text-slate-500 text-xs">
+                <span>Timeline unavailable</span>
+              </div>
+            `;
+            return;
+          }
+          const maxCount = buckets.reduce(
+            (m, b) => (b.count > m ? b.count : m),
+            0
+          );
+          const wrapper = document.createElement("div");
+          wrapper.className = "flex items-end gap-0.5 w-full h-full px-1";
+          buckets.forEach((b, index) => {
+            const bar = document.createElement("div");
+            const ratio = maxCount ? b.count / maxCount : 0;
+            const h = Math.max(3, Math.round(ratio * 44));
+            bar.style.height = `${h}px`;
+            bar.style.animationDelay = `${index * 10}ms`;
+            bar.className =
+              "flex-1 bg-gradient-to-t from-slate-700 to-slate-600 hover:from-emerald-400 hover:to-emerald-500 transition-all duration-300 cursor-help rounded-t-sm shadow-sm hover:shadow-lg hover:shadow-emerald-500/30 fade-in";
+            bar.title = `${b.date}: ${b.count.toLocaleString()} messages`;
+            wrapper.appendChild(bar);
+          });
+          container.appendChild(wrapper);
+        }
+
+        function renderPeoplePanel() {
+          const listEl = elements.peopleList;
+          listEl.innerHTML = "";
+          const q = (elements.peopleSearchInput.value || "").toLowerCase();
+
+          let candidates = state.people || [];
+          if (q) {
+            candidates = candidates.filter((p) => {
+              const name = (p.display_name || "").toLowerCase();
+              const addr = (p.address || "").toLowerCase();
+              return name.includes(q) || addr.includes(q);
+            });
+          }
+
+          const top = candidates.slice(0, 200);
+          if (!top.length) {
+            const emptyState = document.createElement("div");
+            emptyState.className = "flex flex-col items-center justify-center py-14 px-5 text-center fade-in";
+            emptyState.innerHTML = `
+              <div class="relative mb-5">
+                <div class="absolute inset-0 bg-gradient-to-br from-blue-400/20 to-purple-500/20 blur-2xl opacity-50"></div>
+                <div class="relative text-5xl opacity-60">👥</div>
+              </div>
+              <h3 class="text-sm font-semibold text-slate-200 mb-2 tracking-tight">No people matched</h3>
+              <p class="text-xs text-slate-400 leading-relaxed max-w-[16rem]">Try a different search term to find participants</p>
+            `;
+            listEl.appendChild(emptyState);
+            return;
+          }
+
+          top.forEach((person, index) => {
+            const li = document.createElement("button");
+            li.type = "button";
+            li.className =
+              "w-full text-left px-4 py-3 rounded-xl hover:bg-slate-900/80 border border-slate-800 card-hover transition-all duration-200 fade-in";
+            li.style.animationDelay = `${Math.min(index * 20, 200)}ms`;
+
+            const line1 = document.createElement("div");
+            line1.className = "text-[0.8rem] font-bold truncate mb-1 text-slate-100";
+            line1.textContent = person.display_name
+              ? `${person.display_name}`
+              : person.address;
+
+            const email = document.createElement("div");
+            email.className = "text-[0.65rem] text-slate-400 truncate mb-1.5 font-mono";
+            email.textContent = person.display_name ? person.address : "";
+
+            const line2 = document.createElement("div");
+            line2.className = "text-[0.7rem] text-slate-400 flex items-center gap-2";
+            const cos = (person.top_co || []).slice(0, 3).map((c) => c.address);
+
+            const badge = document.createElement("span");
+            badge.className = "inline-flex items-center gap-1 px-2 py-0.5 bg-emerald-500/10 text-emerald-400 rounded-md font-semibold";
+            badge.textContent = `📧 ${person.message_count.toLocaleString()}`;
+            line2.appendChild(badge);
+
+            if (cos.length) {
+              const coSpan = document.createElement("span");
+              coSpan.className = "text-slate-500 truncate text-[0.65rem]";
+              coSpan.textContent = `+ ${cos.join(", ")}`;
+              line2.appendChild(coSpan);
+            }
+
+            li.appendChild(line1);
+            if (person.display_name) li.appendChild(email);
+            li.appendChild(line2);
+
+            li.addEventListener("click", () => {
+              state.selectedPerson = person.address;
+              switchMode("docs");
+              scheduleSearch(0);
+            });
+
+            listEl.appendChild(li);
+          });
+        }
+
+        function buildThreadsIndex() {
+          const threads = new Map();
+          for (const doc of state.docs) {
+            if (!doc.thread_id) continue;
+            const tid = doc.thread_id;
+            let arr = threads.get(tid);
+            if (!arr) {
+              arr = [];
+              threads.set(tid, arr);
+            }
+            arr.push(doc);
+          }
+          for (const [tid, arr] of threads.entries()) {
+            arr.sort((a, b) => {
+              // 1. Sort by Date
+              const da = a.date_key || "";
+              const db = b.date_key || "";
+              if (da !== db) return da.localeCompare(db);
+
+              // 2. Sort by Message ID (numeric from "m123")
+              // This ensures chunks of the same message stay together
+              const ma = parseInt((a.message_id || "m0").substring(1), 10) || 0;
+              const mb = parseInt((b.message_id || "m0").substring(1), 10) || 0;
+              if (ma !== mb) return ma - mb;
+
+              // 3. Sort by Chunk Index within the message
+              const ca = a.chunk_index || 0;
+              const cb = b.chunk_index || 0;
+              if (ca !== cb) return ca - cb;
+
+              // 4. Fallback to Doc ID (numeric)
+              return (a.id || 0) - (b.id || 0);
+            });
+          }
+          state.threadsById = threads;
+        }
+
+        function loadDocText(id) {
+          const key = String(id);
+          if (state.docTextCache.has(key)) return state.docTextCache.get(key);
+          const p = ensureWorkerReady()
+            .then(() => sendWorkerRequest("get-text", { id: Number(id) }))
+            .then((text) => (typeof text === "string" ? text : ""))
+            .catch((err) => {
+              console.error("Failed to load doc text", err);
+              return "";
+            });
+          state.docTextCache.set(key, p);
+          return p;
+        }
+
+        function renderParticipants(doc) {
+          const container = elements.detailParticipants;
+          container.innerHTML = "";
+          const participants = doc.participants || [];
+          if (!participants.length) {
+            const span = document.createElement("div");
+            span.className = "text-[0.7rem] text-slate-400 flex items-center gap-2 py-3 px-2 rounded-lg bg-slate-900/30 border border-slate-800/50";
+            span.innerHTML = `<span class="text-sm opacity-70">👤</span> <span class="font-medium">No participants found</span>`;
+            container.appendChild(span);
+            return;
+          }
+          participants.forEach((addr, index) => {
+            const person = state.peopleByAddress.get(addr);
+            const label = person?.display_name || addr;
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className =
+              "px-3 py-1.5 rounded-lg border border-slate-700 text-[0.7rem] hover:bg-slate-800 hover:border-emerald-500/50 transition-all duration-200 font-medium card-hover fade-in";
+            btn.style.animationDelay = `${index * 40}ms`;
+
+            const icon = document.createElement("span");
+            icon.className = "text-emerald-400";
+            icon.textContent = "👤";
+            btn.appendChild(icon);
+
+            const labelSpan = document.createElement("span");
+            labelSpan.textContent = ` ${label}`;
+            btn.appendChild(labelSpan);
+
+            btn.title = person?.display_name ? addr : "";
+            btn.addEventListener("click", () => {
+              state.selectedPerson = addr;
+              scheduleSearch(0);
+              switchMode("docs");
+            });
+            container.appendChild(btn);
+          });
+        }
+
+        function renderNeighbors(doc) {
+          const container = elements.detailNeighbors;
+          container.innerHTML = "";
+          const idStr = String(doc.id);
+          const neighbors = state.neighborsById.get(idStr) || [];
+          if (!neighbors.length) {
+            const span = document.createElement("div");
+            span.className = "text-[0.7rem] text-slate-400 flex items-center gap-2 py-3 px-2 rounded-lg bg-slate-900/30 border border-slate-800/50";
+            span.innerHTML = `<span class="text-sm opacity-70">🔗</span> <span class="font-medium">No similar documents</span>`;
+            container.appendChild(span);
+            return;
+          }
+          neighbors.slice(0, 10).forEach((entry, index) => {
+            const neighDoc = state.docsById.get(String(entry.id));
+            if (!neighDoc) return;
+            const btn = document.createElement("button");
+            btn.type = "button";
+            btn.className =
+              "w-full text-left px-3 py-2 rounded-lg hover:bg-slate-900/80 border border-slate-800/50 hover:border-emerald-500/40 transition-all duration-200 card-hover fade-in";
+            btn.style.animationDelay = `${index * 40}ms`;
+            const title = document.createElement("div");
+            title.className = "text-[0.75rem] font-semibold truncate mb-1 text-slate-200";
+            title.textContent = neighDoc.subject || "(No subject)";
+            const meta = document.createElement("div");
+            meta.className = "text-[0.65rem] text-slate-400 truncate flex items-center gap-1.5";
+            const pct =
+              typeof entry.score === "number"
+                ? Math.round(entry.score * 100)
+                : null;
+
+            if (neighDoc.date_key) {
+              const dateSpan = document.createElement("span");
+              dateSpan.textContent = `📅 ${neighDoc.date_key}`;
+              meta.appendChild(dateSpan);
+            }
+
+            if (neighDoc.date_key && pct != null) {
+              const separator = document.createElement("span");
+              separator.className = "text-slate-600";
+              separator.textContent = "•";
+              meta.appendChild(separator);
+            }
+
+            if (pct != null) {
+              const pctBadge = document.createElement("span");
+              pctBadge.className = "px-1.5 py-0.5 bg-emerald-500/15 text-emerald-400 rounded font-semibold";
+              pctBadge.textContent = `${pct}% match`;
+              meta.appendChild(pctBadge);
+            }
+            btn.appendChild(title);
+            btn.appendChild(meta);
+            btn.addEventListener("click", () => selectDoc(neighDoc.id));
+            container.appendChild(btn);
+          });
+        }
+
+        function renderThread(doc) {
+          const headerEl = elements.detailThreadHeader;
+          const listEl = elements.detailThreadList;
+          headerEl.innerHTML = "";
+          listEl.innerHTML = "";
+
+          const tid = doc.thread_id;
+          if (!tid) {
+            headerEl.innerHTML = `
+              <div class="text-[0.7rem] text-slate-400 flex items-center gap-2 py-3 px-2 rounded-lg bg-slate-900/30 border border-slate-800/50">
+                <span class="text-sm opacity-70">💬</span> <span class="font-medium">Not part of a thread</span>
+              </div>
+            `;
+            return;
+          }
+
+          const threadDocs = state.threadsById.get(tid) || [];
+          if (!threadDocs.length) {
+            headerEl.innerHTML = `
+              <div class="text-[0.7rem] text-slate-400 py-2 px-2 rounded-lg bg-slate-900/30 border border-slate-800/50 font-medium">Thread information unavailable</div>
+            `;
+            return;
+          }
+
+          const headerContent = document.createElement("div");
+          headerContent.className = "flex items-center justify-between gap-3 mb-2";
+
+          const threadInfo = document.createElement("span");
+          threadInfo.className = "text-[0.7rem] font-semibold text-slate-300";
+
+          const badge = document.createElement("span");
+          badge.className = "inline-flex items-center gap-1.5 px-2.5 py-1 bg-slate-800/60 rounded-lg border border-slate-700/50";
+
+          const icon = document.createElement("span");
+          icon.textContent = "💬";
+          badge.appendChild(icon);
+
+          const text = document.createElement("span");
+          text.textContent = ` Thread ${tid} `;
+          badge.appendChild(text);
+
+          const separator = document.createElement("span");
+          separator.className = "text-slate-500";
+          separator.textContent = "•";
+          badge.appendChild(separator);
+
+          const count = document.createElement("span");
+          count.textContent = ` ${threadDocs.length} messages`;
+          badge.appendChild(count);
+
+          threadInfo.appendChild(badge);
+
+          const viewAllBtn = document.createElement("button");
+          viewAllBtn.type = "button";
+          viewAllBtn.className =
+            "text-[0.7rem] text-emerald-400 hover:text-emerald-300 font-semibold px-3 py-1.5 rounded-lg hover:bg-emerald-500/10 transition-all duration-200 border border-emerald-500/30 hover:border-emerald-500/50";
+          viewAllBtn.textContent = "View Full Thread";
+          viewAllBtn.addEventListener("click", async () => {
+            const parts = [];
+            for (let i = 0; i < threadDocs.length; i += 1) {
+              const td = threadDocs[i];
+              const text = await loadDocText(td.id);
+              parts.push(
+                `----- Message ${i + 1}/${threadDocs.length} • ${
+                  td.date_key || ""
+                } • ${td.subject || "(No subject)"} -----\n\n${text}`
+              );
+            }
+            const combined = parts.join("\n\n\n");
+            if (String(state.selectedDocId) === String(doc.id)) {
+              elements.detailBody.textContent = combined;
+            }
+          });
+
+          headerContent.appendChild(threadInfo);
+          headerContent.appendChild(viewAllBtn);
+          headerEl.appendChild(headerContent);
+
+          threadDocs.forEach((td, index) => {
+            const btn = document.createElement("button");
+            btn.type = "button";
+            const isActive = String(td.id) === String(doc.id);
+            btn.className =
+              "w-full text-left px-3 py-2 rounded-lg text-[0.7rem] border transition-all duration-200 card-hover fade-in " +
+              (isActive
+                ? "bg-gradient-to-r from-emerald-500/15 to-blue-500/10 border-emerald-500/50 font-semibold"
+                : "bg-slate-900/40 border-slate-800/50 hover:bg-slate-900/70 hover:border-slate-700");
+            btn.style.animationDelay = `${index * 30}ms`;
+            const subjectText = td.subject || "(No subject)";
+            const datePart = td.date_key || "";
+
+            const wrapper = document.createElement("div");
+            wrapper.className = "flex items-center gap-2";
+
+            const indicator = document.createElement("span");
+            indicator.className = isActive ? "text-emerald-400" : "text-slate-600";
+            indicator.textContent = isActive ? "▸" : "•";
+            wrapper.appendChild(indicator);
+
+            const text = document.createElement("span");
+            text.className = "truncate";
+            text.textContent = `${datePart} • ${subjectText}`;
+            wrapper.appendChild(text);
+
+            btn.appendChild(wrapper);
+            btn.addEventListener("click", () => selectDoc(td.id));
+            listEl.appendChild(btn);
+          });
+        }
+
+        function renderChunkNav(doc) {
+          const el = elements.detailChunkNav;
+          el.innerHTML = "";
+          const count = doc.chunk_count || 1;
+          const idx = (doc.chunk_index || 0) + 1;
+          if (count <= 1) return;
+
+          const wrapper = document.createElement("div");
+          wrapper.className = "flex items-center justify-between w-full";
+
+          const info = document.createElement("span");
+          info.className = "text-xs font-semibold text-slate-300 flex items-center gap-2";
+          info.innerHTML = `
+            <span class="text-sm">📑</span>
+            <span class="px-2.5 py-1 bg-slate-800/60 rounded-lg border border-slate-700/50">
+              Chunk ${idx} of ${count}
+            </span>
+          `;
+
+          const btnGroup = document.createElement("div");
+          btnGroup.className = "flex items-center gap-2";
+
+          const prevBtn = document.createElement("button");
+          prevBtn.type = "button";
+          prevBtn.className =
+            "text-[0.7rem] px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 font-semibold hover:border-emerald-500/40";
+          prevBtn.innerHTML = "← Prev";
+          prevBtn.disabled = idx <= 1;
+          prevBtn.addEventListener("click", () => {
+            const siblings = state.docs.filter(
+              (d) => d.message_id === doc.message_id
+            );
+            const target = siblings.find(
+              (d) => d.chunk_index === doc.chunk_index - 1
+            );
+            if (target) selectDoc(target.id);
+          });
+
+          const nextBtn = document.createElement("button");
+          nextBtn.type = "button";
+          nextBtn.className =
+            "text-[0.7rem] px-3 py-1.5 rounded-lg border border-slate-700 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 font-semibold hover:border-emerald-500/40";
+          nextBtn.innerHTML = "Next →";
+          nextBtn.disabled = idx >= count;
+          nextBtn.addEventListener("click", () => {
+            const siblings = state.docs.filter(
+              (d) => d.message_id === doc.message_id
+            );
+            const target = siblings.find(
+              (d) => d.chunk_index === doc.chunk_index + 1
+            );
+            if (target) selectDoc(target.id);
+          });
+
+          const fullBtn = document.createElement("button");
+          fullBtn.type = "button";
+          fullBtn.className =
+            "text-[0.7rem] px-3 py-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 transition-all duration-200 font-semibold";
+          fullBtn.innerHTML = "📄 View Full Document";
+          fullBtn.addEventListener("click", async () => {
+            const siblings = state.docs
+              .filter((d) => d.message_id === doc.message_id)
+              .sort((a, b) => a.chunk_index - b.chunk_index);
+            const parts = [];
+            for (const s of siblings) {
+              const text = await loadDocText(s.id);
+              parts.push(text);
+            }
+            const combined = parts.join("\n\n");
+            if (String(state.selectedDocId) === String(doc.id)) {
+              elements.detailBody.textContent = combined;
+            }
+          });
+
+          btnGroup.appendChild(prevBtn);
+          btnGroup.appendChild(nextBtn);
+          btnGroup.appendChild(fullBtn);
+
+          wrapper.appendChild(info);
+          wrapper.appendChild(btnGroup);
+          el.appendChild(wrapper);
+        }
+
+        function clearDetailPanel() {
+          elements.detailTitle.textContent = "Select a message";
+          elements.detailMeta.textContent = "";
+          elements.detailBody.textContent = "";
+          elements.detailParticipants.innerHTML = "";
+          elements.detailNeighbors.innerHTML = "";
+          elements.detailThreadHeader.textContent = "";
+          elements.detailThreadList.innerHTML = "";
+          elements.detailChunkNav.innerHTML = "";
+        }
+
+        function renderSelectedDoc() {
+          const idStr = String(state.selectedDocId || "");
+          const doc = state.docsById.get(idStr);
+          if (!doc) {
+            clearDetailPanel();
+            return;
+          }
+
+          elements.detailTitle.textContent = doc.subject || "(No subject)";
+          const metaParts = [];
+          if (doc.date_key) metaParts.push(doc.date_key);
+          if (doc.from) metaParts.push(`From: ${doc.from}`);
+          if (doc.to) metaParts.push(`To: ${doc.to}`);
+          if (doc.filename) metaParts.push(doc.filename);
+          elements.detailMeta.textContent = metaParts.join(" • ");
+
+          renderChunkNav(doc);
+          renderParticipants(doc);
+          renderNeighbors(doc);
+          renderThread(doc);
+
+          elements.detailBody.textContent = "Loading full text…";
+          loadDocText(doc.id).then((text) => {
+            if (String(state.selectedDocId) !== idStr) return;
+            if (text === "" && !state.docsById.get(idStr)) return; // Document might be missing
+            elements.detailBody.textContent = text || "(No body text available)";
+          }).catch(() => {
+            if (String(state.selectedDocId) !== idStr) return;
+             elements.detailBody.innerHTML = `<span class="text-red-400">Failed to load document text. Please try again.</span>`;
+          });
+        }
+
+        function selectDoc(id) {
+          state.selectedDocId = id;
+          renderResultsList();
+          renderSelectedDoc();
+          persistStateToUrl();
+          updateMobileLayout();
+          
+          // Scroll detail container to top
+          if (elements.detailContent) {
+              elements.detailContent.scrollTop = 0;
+          }
+          // Scroll window to top on mobile
+          if (window.innerWidth < 768) {
+             window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        }
+
+        function handleMobileBack() {
+          state.selectedDocId = null;
+          updateMobileLayout();
+          persistStateToUrl();
+          renderResultsList(); // Clear selection highlight
+        }
+
+        // ==================== Mobile-Specific Enhancements ====================
+
+        // Track if mobile enhancements have been initialized to prevent duplicates
+        let mobileEnhancementsInitialized = false;
+
+        function setupMobileEnhancements() {
+          if (window.innerWidth >= 768) return; // Desktop only
+          if (mobileEnhancementsInitialized) return; // Already initialized
+
+          // Add swipe gesture support for going back from detail view
+          setupSwipeGestures();
+
+          // Add header scroll shadow
+          setupHeaderScrollShadow();
+
+          // Add scroll indicators for lists
+          setupListScrollIndicators();
+
+          // Update filter badge count
+          setupFilterBadge();
+
+          // Add active filter chips
+          setupActiveFilterChips();
+
+          mobileEnhancementsInitialized = true;
+        }
+
+        function setupSwipeGestures() {
+          let touchStartX = 0;
+          let touchStartY = 0;
+          let isSwiping = false;
+
+          const detailPanel = elements.detailPanel;
+          if (!detailPanel) return;
+
+          // Create swipe indicator (check if it already exists first)
+          let indicator = document.querySelector(".mobile-swipe-indicator");
+          if (!indicator) {
+            indicator = document.createElement("div");
+            indicator.className = "mobile-swipe-indicator";
+            document.body.appendChild(indicator);
+          }
+
+          detailPanel.addEventListener("touchstart", (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchStartY = e.touches[0].clientY;
+            isSwiping = false;
+          }, { passive: true });
+
+          detailPanel.addEventListener("touchmove", (e) => {
+            if (!state.selectedDocId || window.innerWidth >= 768) return;
+
+            const touchX = e.touches[0].clientX;
+            const touchY = e.touches[0].clientY;
+            const deltaX = touchX - touchStartX;
+            const deltaY = touchY - touchStartY;
+
+            // Detect horizontal swipe from left edge
+            if (touchStartX < 50 && deltaX > 30 && Math.abs(deltaY) < Math.abs(deltaX)) {
+              isSwiping = true;
+              indicator.classList.add("active");
+            }
+          }, { passive: true });
+
+          detailPanel.addEventListener("touchend", (e) => {
+            indicator.classList.remove("active");
+
+            if (!isSwiping || !state.selectedDocId || window.innerWidth >= 768) {
+              isSwiping = false;
+              return;
+            }
+
+            const touchX = e.changedTouches[0].clientX;
+            const deltaX = touchX - touchStartX;
+
+            // Swipe threshold: 100px
+            if (deltaX > 100) {
+              handleMobileBack();
+              // Haptic feedback if available
+              if (navigator.vibrate) {
+                navigator.vibrate(10);
+              }
+            }
+
+            isSwiping = false;
+          }, { passive: true });
+        }
+
+        function setupHeaderScrollShadow() {
+          // Cache header element to avoid DOM query on every scroll
+          const header = document.querySelector("header");
+          if (!header) return;
+
+          let isScrolled = false;
+
+          window.addEventListener("scroll", () => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+
+            // Only update class if state changes to minimize DOM manipulation
+            if (scrollTop > 10 && !isScrolled) {
+              header.classList.add("scrolled");
+              isScrolled = true;
+            } else if (scrollTop <= 10 && isScrolled) {
+              header.classList.remove("scrolled");
+              isScrolled = false;
+            }
+          }, { passive: true });
+        }
+
+        function setupListScrollIndicators() {
+          const resultsList = elements.resultsList;
+          const peopleList = elements.peopleList;
+
+          [resultsList, peopleList].forEach(list => {
+            if (!list) return;
+
+            let isScrolled = false;
+
+            list.addEventListener("scroll", () => {
+              const shouldShowIndicator = list.scrollTop > 10;
+
+              // Only update class if state changes to minimize DOM manipulation
+              if (shouldShowIndicator && !isScrolled) {
+                list.classList.add("scrolled");
+                isScrolled = true;
+              } else if (!shouldShowIndicator && isScrolled) {
+                list.classList.remove("scrolled");
+                isScrolled = false;
+              }
+            }, { passive: true });
+          });
+        }
+
+        function setupFilterBadge() {
+          // This will be called in renderKindsFilter and whenever filters change
+          const updateBadge = () => {
+            if (window.innerWidth >= 768) return;
+
+            let activeFilterCount = 0;
+
+            // Count active kind filters
+            if (state.activeKinds.size < state.allKinds.length) {
+              activeFilterCount += state.activeKinds.size;
+            }
+
+            // Count other active filters
+            if (elements.filenameInput?.value) activeFilterCount++;
+            if (elements.dateFromInput?.value) activeFilterCount++;
+            if (elements.dateToInput?.value) activeFilterCount++;
+            if (state.selectedPerson) activeFilterCount++;
+            if (state.selectedDomain) activeFilterCount++;
+
+            // Create or update badge
+            const filtersHeader = elements.filtersHeader;
+            if (!filtersHeader) return;
+
+            let badge = filtersHeader.querySelector(".mobile-filter-badge");
+            if (!badge) {
+              badge = document.createElement("span");
+              badge.className = "mobile-filter-badge";
+              // More robust: find the first span with uppercase text (the label)
+              const spans = filtersHeader.querySelectorAll("span");
+              const labelSpan = Array.from(spans).find(s =>
+                s.textContent && s.textContent.includes("Filters")
+              );
+              if (labelSpan) {
+                labelSpan.appendChild(badge);
+              } else {
+                // Fallback: append to filters header directly
+                filtersHeader.appendChild(badge);
+              }
+            }
+
+            if (activeFilterCount > 0) {
+              badge.textContent = activeFilterCount;
+              badge.classList.remove("empty");
+            } else {
+              badge.classList.add("empty");
+            }
+          };
+
+          // Update badge when filters change
+          state.updateFilterBadge = updateBadge;
+          updateBadge();
+        }
+
+        function setupActiveFilterChips() {
+          const renderChips = () => {
+            if (window.innerWidth >= 768) return;
+
+            const panelDocs = elements.panelDocs;
+            if (!panelDocs) return;
+
+            // Remove existing chips container
+            let chipsContainer = panelDocs.querySelector(".mobile-active-filters");
+            if (chipsContainer) {
+              chipsContainer.remove();
+            }
+
+            // Collect active filters
+            const activeFilters = [];
+
+            if (elements.filenameInput?.value) {
+              activeFilters.push({
+                type: "filename",
+                label: `📄 ${elements.filenameInput.value}`,
+                remove: () => {
+                  elements.filenameInput.value = "";
+                  scheduleSearch();
+                }
+              });
+            }
+
+            if (elements.dateFromInput?.value || elements.dateToInput?.value) {
+              const from = elements.dateFromInput?.value || "...";
+              const to = elements.dateToInput?.value || "...";
+              activeFilters.push({
+                type: "date",
+                label: `📅 ${from} → ${to}`,
+                remove: () => {
+                  elements.dateFromInput.value = "";
+                  elements.dateToInput.value = "";
+                  scheduleSearch();
+                }
+              });
+            }
+
+            if (state.selectedPerson) {
+              const person = state.peopleByAddress.get(state.selectedPerson);
+              const label = person?.display_name || state.selectedPerson;
+              activeFilters.push({
+                type: "person",
+                label: `👤 ${label}`,
+                remove: () => {
+                  state.selectedPerson = null;
+                  scheduleSearch();
+                }
+              });
+            }
+
+            if (state.activeKinds.size < state.allKinds.length && state.activeKinds.size > 0) {
+              activeFilters.push({
+                type: "kinds",
+                label: `🏷️ ${state.activeKinds.size} types`,
+                remove: () => {
+                  state.activeKinds = new Set(state.allKinds);
+                  renderKindsFilter();
+                  scheduleSearch();
+                }
+              });
+            }
+
+            if (activeFilters.length === 0) return;
+
+            // Create chips container
+            chipsContainer = document.createElement("div");
+            chipsContainer.className = "mobile-active-filters";
+
+            activeFilters.forEach(filter => {
+              const chip = document.createElement("div");
+              chip.className = "mobile-filter-chip";
+              chip.innerHTML = `
+                <span>${filter.label}</span>
+                <button type="button" aria-label="Remove filter">×</button>
+              `;
+              chip.querySelector("button").addEventListener("click", () => {
+                filter.remove();
+                renderChips();
+                if (state.updateFilterBadge) state.updateFilterBadge();
+              });
+              chipsContainer.appendChild(chip);
+            });
+
+            // Insert after the search section, before the filters
+            // More robust: look for the search query section and insert after it
+            const searchSection = panelDocs.querySelector("#search-query")?.closest(".space-y-3");
+            if (searchSection && searchSection.nextElementSibling) {
+              // Insert after search section (before the next sibling)
+              searchSection.parentNode.insertBefore(chipsContainer, searchSection.nextElementSibling);
+            } else if (searchSection) {
+              // Search section is last child, append after it
+              searchSection.parentNode.appendChild(chipsContainer);
+            } else {
+              // Fallback: insert at beginning of panel-docs
+              const firstChild = panelDocs.firstElementChild;
+              if (firstChild) {
+                panelDocs.insertBefore(chipsContainer, firstChild);
+              }
+            }
+          };
+
+          // Update chips when filters change
+          state.renderActiveFilterChips = renderChips;
+          renderChips();
+        }
+
+        function scheduleSearch(delay = 200) {
+          if (searchDebounce) clearTimeout(searchDebounce);
+          searchDebounce = setTimeout(() => {
+            searchDebounce = null;
+            runSearch();
+          }, delay);
+        }
+
+        async function runSearch() {
+          if (!state.docs.length) return;
+          if (elements.resultsCount) elements.resultsCount.textContent = "Searching…";
+          const generation = ++searchGeneration;
+          const query = elements.queryInput.value || "";
+          state.queryText = query;
+          const ast = parseQueryString(query);
+
+          let resultMap;
+          try {
+            resultMap = await evaluateAst(ast);
+          } catch (err) {
+            console.error("Search evaluation failed", err);
+            if (generation !== searchGeneration) return;
+            resultMap = new Map();
+          }
+
+          if (generation !== searchGeneration) return;
+
+          const filtered = applyUiFilters(resultMap);
+          state.currentResults = filtered.map((x) => x.doc);
+          renderResultsList();
+          updateResultCount();
+          persistStateToUrl();
+
+          // Update mobile UI elements
+          if (state.updateFilterBadge) state.updateFilterBadge();
+          if (state.renderActiveFilterChips) state.renderActiveFilterChips();
+
+          if (state.currentResults.length) {
+            const idStr = String(state.selectedDocId || "");
+            const stillVisible = idStr
+              ? state.currentResults.some(
+                  (d) => String(d.id) === String(idStr)
+                )
+              : false;
+            if (!stillVisible) {
+              // On mobile, do NOT auto-select first result as it triggers a view switch/animation
+              // hiding the search bar while typing. Just deselect.
+              if (window.innerWidth < 768) {
+                state.selectedDocId = null;
+                renderResultsList();
+                // Ensure layout stays on list
+                updateMobileLayout();
+              } else {
+                // Desktop: auto-select first for Master-Detail convenience
+                selectDoc(state.currentResults[0].id);
+              }
+            } else {
+              renderSelectedDoc();
+            }
+          } else {
+            clearDetailPanel();
+          }
+        }
+
+        function switchMode(mode) {
+          if (state.mode === mode) return;
+          state.mode = mode;
+          if (mode === "docs") {
+            elements.modeDocsBtn.className = "flex-1 py-2 text-[0.75rem] rounded-md bg-emerald-500/90 text-white font-bold shadow-lg transition-all duration-200 text-center";
+            elements.modePeopleBtn.className = "flex-1 py-2 text-[0.75rem] rounded-md text-slate-400 hover:text-slate-200 font-semibold transition-all duration-200 text-center";
+            elements.panelDocs.classList.remove("hidden");
+            elements.panelPeople.classList.add("hidden");
+          } else {
+            elements.modePeopleBtn.className = "flex-1 py-2 text-[0.75rem] rounded-md bg-sky-500/90 text-white font-bold shadow-lg transition-all duration-200 text-center";
+            elements.modeDocsBtn.className = "flex-1 py-2 text-[0.75rem] rounded-md text-slate-400 hover:text-slate-200 font-semibold transition-all duration-200 text-center";
+            elements.panelPeople.classList.remove("hidden");
+            elements.panelDocs.classList.add("hidden");
+            renderPeoplePanel();
+          }
+        }
+
+        function clearFilters() {
+          state.activeKinds = new Set(state.allKinds);
+          elements.filenameInput.value = "";
+          elements.dateFromInput.value = "";
+          elements.dateToInput.value = "";
+          state.selectedPerson = null;
+          state.selectedDomain = null;
+          renderKindsFilter();
+          scheduleSearch();
+
+          // Update mobile UI elements
+          if (state.updateFilterBadge) state.updateFilterBadge();
+          if (state.renderActiveFilterChips) state.renderActiveFilterChips();
+        }
+
+        function restoreStateFromUrl() {
+          if (!location.hash || location.hash.length <= 1) return;
+          const hash = location.hash.slice(1);
+          const params = new URLSearchParams(hash);
+
+          const q = params.get("q");
+          if (q != null) {
+            elements.queryInput.value = q;
+            state.queryText = q;
+          }
+
+          const kindsParam = params.get("kinds");
+          if (kindsParam) {
+            const allowed = new Set(
+              kindsParam.split(",").filter((x) => x.length)
+            );
+            state.activeKinds = new Set();
+            for (const kind of state.allKinds) {
+              if (allowed.has(kind)) state.activeKinds.add(kind);
+            }
+          } else {
+            state.activeKinds = new Set(state.allKinds);
+          }
+
+          const file = params.get("file");
+          if (file != null) elements.filenameInput.value = file;
+
+          const from = params.get("from");
+          const to = params.get("to");
+          if (from) elements.dateFromInput.value = from;
+          if (to) elements.dateToInput.value = to;
+
+          const person = params.get("person");
+          if (person) state.selectedPerson = person;
+
+          const doc = params.get("doc");
+          if (doc) state.selectedDocId = doc;
+        }
+
+        function persistStateToUrl() {
+          const params = new URLSearchParams();
+          if (state.queryText && state.queryText.trim()) {
+            params.set("q", state.queryText.trim());
+          }
+          const activeKindsArray = Array.from(state.activeKinds || []);
+          if (
+            activeKindsArray.length &&
+            activeKindsArray.length !== state.allKinds.length
+          ) {
+            params.set("kinds", activeKindsArray.join(","));
+          }
+          const fnFilter = elements.filenameInput.value.trim();
+          if (fnFilter) params.set("file", fnFilter);
+          const df = elements.dateFromInput.value;
+          const dt = elements.dateToInput.value;
+          if (df) params.set("from", df);
+          if (dt) params.set("to", dt);
+          if (state.selectedPerson) params.set("person", state.selectedPerson);
+          if (state.selectedDocId)
+            params.set("doc", String(state.selectedDocId));
+
+          const hash = params.toString();
+          const base = location.pathname + location.search;
+          const url = hash ? `${base}#${hash}` : base;
+          history.replaceState(null, "", url);
+        }
+
+        function attachListeners() {
+          elements.queryInput.addEventListener("input", () => scheduleSearch());
+          elements.filenameInput.addEventListener("input", () =>
+            scheduleSearch()
+          );
+          elements.dateFromInput.addEventListener("change", () =>
+            scheduleSearch()
+          );
+          elements.dateToInput.addEventListener("change", () =>
+            scheduleSearch()
+          );
+          elements.clearFiltersBtn.addEventListener("click", () =>
+            clearFilters()
+          );
+          elements.modeDocsBtn.addEventListener("click", () =>
+            switchMode("docs")
+          );
+          elements.modePeopleBtn.addEventListener("click", () =>
+            switchMode("people")
+          );
+          elements.peopleSearchInput.addEventListener("input", () =>
+            renderPeoplePanel()
+          );
+          if (elements.mobileBackBtn) {
+            elements.mobileBackBtn.addEventListener("click", handleMobileBack);
+          }
+          if (elements.filtersHeader) {
+             elements.filtersHeader.addEventListener("click", (e) => {
+               if (e.target.closest("button")) return; // Ignore clear button clicks
+               toggleFilters();
+             });
+          }
+
+          // Handle resize: update layout and re-initialize mobile enhancements if needed
+          window.addEventListener("resize", () => {
+            updateMobileLayout();
+            // If resizing to mobile and enhancements not yet initialized, initialize them
+            if (window.innerWidth < 768 && !mobileEnhancementsInitialized) {
+              setupMobileEnhancements();
+            }
+          });
+        }
+
+        async function loadAllData() {
+          try {
+            const data = await ensureWorkerReady();
+
+            // Initialize filters state (collapsed on mobile by default)
+            if (window.innerWidth < 768) {
+               toggleFilters(false);
+            } else {
+               toggleFilters(true);
+            }
+
+            state.docs = (data && data.docs) || [];
+            state.docsById = new Map(
+              state.docs.map((d) => [String(d.id), d])
+            );
+            state.allDocIds = state.docs.map((d) => d.id);
+            state.indexState = data && data.index_state ? data.index_state : "lite";
+
+            const kindSet = new Set();
+            state.docs.forEach((d) => {
+              if (d.kind) kindSet.add(d.kind);
+            });
+            state.allKinds = Array.from(kindSet).sort();
+            state.activeKinds = new Set(state.allKinds);
+
+            state.timeline = (data && data.timeline) || [];
+            state.people = (data && data.people) || [];
+            state.peopleByAddress = new Map(
+              state.people.map((p) => [p.address, p])
+            );
+
+            state.neighborsById = new Map();
+
+            buildThreadsIndex();
+            renderKindsFilter();
+            renderTimeline();
+            renderStats();
+            updateIndexBadge();
+            switchMode("docs");
+
+            if (state.timeline.length) {
+              const dates = state.timeline.map((b) => b.date).sort();
+              elements.dateFromInput.min = dates[0];
+              elements.dateFromInput.max = dates[dates.length - 1];
+              elements.dateToInput.min = dates[0];
+              elements.dateToInput.max = dates[dates.length - 1];
+            }
+
+            restoreStateFromUrl();
+            scheduleSearch(0);
+            updateMobileLayout();
+          } catch (err) {
+            console.error("Failed to load data", err);
+            elements.resultsCount.textContent =
+              "Failed to load data (see console).";
+          }
+        }
+
+        function init() {
+          cacheElements();
+          attachListeners();
+          setLoading(true);
+          loadAllData().finally(() => {
+            setLoading(false);
+            // Setup mobile enhancements after data is loaded
+            setupMobileEnhancements();
+          });
+        }
+
+        document.addEventListener("DOMContentLoaded", init);
+      })();
+    </script>
+  </body>
+</html>
