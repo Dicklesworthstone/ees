@@ -260,47 +260,59 @@
 
       /* ==================== Mobile Optimizations ==================== */
       @media (max-width: 768px) {
-        /* Reduce padding on mobile for more screen real estate */
+        /* Better readability and layout on mobile */
         body {
           font-size: 14px;
+          line-height: 1.6;
         }
 
-        /* Header optimizations */
+        /* Header optimizations with safe area support */
         header {
           padding-left: 1rem !important;
           padding-right: 1rem !important;
-          padding-top: 1rem !important;
+          padding-top: max(1rem, env(safe-area-inset-top)) !important;
           padding-bottom: 1rem !important;
         }
 
-        /* Main content spacing */
+        /* Main content spacing with safe area support */
         main {
-          padding-left: 1rem !important;
-          padding-right: 1rem !important;
-          padding-bottom: 1rem !important;
-        }
-
-        /* Stack layout vertically on mobile */
-        main {
+          padding-left: max(1rem, env(safe-area-inset-left)) !important;
+          padding-right: max(1rem, env(safe-area-inset-right)) !important;
+          padding-bottom: max(1rem, env(safe-area-inset-bottom)) !important;
           flex-direction: column !important;
+          gap: 1rem;
+          overflow-x: hidden;
         }
 
-        /* Make aside full-width on mobile */
+        /* Make aside full-width on mobile with better sizing */
         aside {
           width: 100% !important;
-          max-height: 60vh;
-          margin-bottom: 1rem;
+          max-height: 55vh;
+          margin-bottom: 0;
+          overflow-x: hidden;
         }
 
         /* Detail panel adjustments */
         section {
           margin-left: 0 !important;
           width: 100%;
+          min-height: 40vh;
+          overflow-x: hidden;
         }
 
-        /* Increase touch targets for mobile */
+        /* Increase touch targets with visual feedback */
         button {
           min-height: 44px;
+          position: relative;
+        }
+
+        button:active::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: inherit;
+          pointer-events: none;
         }
 
         /* Mode toggle buttons - larger for easier tapping */
@@ -309,33 +321,52 @@
           padding-right: 1.25rem !important;
           padding-top: 0.625rem !important;
           padding-bottom: 0.625rem !important;
+          font-size: 0.8rem !important;
         }
 
-        /* Search input - larger and more comfortable */
+        /* Search input - optimized for mobile */
         #search-query {
           font-size: 16px !important; /* Prevents iOS zoom */
           padding-top: 0.875rem !important;
           padding-bottom: 0.875rem !important;
+          line-height: 1.5;
         }
 
-        /* Filter inputs */
+        /* Filter inputs - optimized for mobile */
         #filename-filter,
         #date-from,
         #date-to,
         #people-search {
           font-size: 16px !important; /* Prevents iOS zoom */
+          padding: 0.75rem !important;
         }
 
-        /* Result cards - better spacing */
+        /* Better date input styling */
+        input[type="date"] {
+          appearance: none;
+          -webkit-appearance: none;
+        }
+
+        /* Result cards - better spacing and text wrapping */
         .card-hover {
           margin-bottom: 0.75rem;
         }
 
-        /* Stats cards - stack on very small screens */
+        #results-list button > div {
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        /* Stats cards - stack and optimize on small screens */
         @media (max-width: 640px) {
           .md\\:grid-cols-3 {
             grid-template-columns: 1fr !important;
+            gap: 0.75rem !important;
           }
+        }
+
+        .md\\:grid-cols-3 > div {
+          padding: 1rem !important;
         }
 
         /* Reduce animation intensity on mobile for performance */
@@ -347,35 +378,46 @@
           transform: translateY(-1px) scale(1.005);
         }
 
-        /* Header title - adjust size */
+        /* Header title - adjust size and wrapping */
         h1 {
           font-size: 1.5rem !important;
+          line-height: 1.3 !important;
         }
 
-        /* Detail view title */
+        /* Detail view title - better wrapping */
         #detail-title {
           font-size: 1.5rem !important;
+          line-height: 1.4 !important;
+          word-wrap: break-word;
+          overflow-wrap: break-word;
+        }
+
+        /* Detail meta - better wrapping */
+        #detail-meta {
+          line-height: 1.6 !important;
+          word-wrap: break-word;
         }
 
         /* Optimize glass effect on mobile (less blur for performance) */
         .glass {
           backdrop-filter: blur(10px) saturate(150%);
-        }
-
-        /* Reduce shadow intensity on mobile */
-        .glass {
           box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4),
                       inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
 
-        /* Pills - easier to tap */
+        /* Pills - easier to tap with better spacing */
         .pill {
           padding: 0.5rem 1rem;
+          margin: 0.25rem;
         }
 
-        /* Timeline - smaller on mobile */
+        /* Timeline - smaller on mobile with better touch targets */
         #timeline {
           height: 3rem !important;
+        }
+
+        #timeline > div > div {
+          min-width: 3px;
         }
 
         /* Participant buttons - full width for easier tapping */
@@ -385,25 +427,106 @@
           margin-bottom: 0.5rem;
         }
 
-        /* Chunk navigation - stack vertically */
+        /* Chunk navigation - stack vertically with better layout */
         #detail-chunk-nav > div {
           flex-direction: column !important;
-          align-items: flex-start !important;
-          gap: 1rem;
+          align-items: stretch !important;
+          gap: 0.75rem;
         }
 
         #detail-chunk-nav button {
           width: 100%;
+          justify-content: center;
         }
 
-        /* Results list - optimize height */
+        #detail-chunk-nav .flex.items-center.gap-2 {
+          flex-direction: column !important;
+          gap: 0.5rem !important;
+        }
+
+        #detail-chunk-nav .flex.items-center.gap-2 button {
+          width: 100%;
+        }
+
+        /* Results and people lists - optimize height and scrolling */
         #results-list {
           max-height: 50vh;
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior: contain;
         }
 
-        /* People list - optimize height */
         #people-list {
           max-height: 45vh;
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior: contain;
+        }
+
+        /* Detail body - optimize for mobile reading */
+        #detail-body {
+          padding: 1rem !important;
+          font-size: 0.85rem !important;
+          line-height: 1.7 !important;
+          -webkit-overflow-scrolling: touch;
+          overscroll-behavior: contain;
+        }
+
+        /* Empty states - better sizing */
+        #results-list .flex.flex-col.items-center,
+        #people-list .flex.flex-col.items-center {
+          padding-top: 2rem !important;
+          padding-bottom: 2rem !important;
+        }
+
+        /* Better mobile scrollbar */
+        ::-webkit-scrollbar {
+          width: 4px;
+          height: 4px;
+        }
+
+        /* Metadata sections - scrollable with max height */
+        #detail-participants,
+        #detail-neighbors,
+        #detail-thread-list {
+          max-height: 300px;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        /* Better grid layout for detail sections */
+        .grid.grid-cols-1.md\\:grid-cols-2 {
+          grid-template-columns: 1fr !important;
+          gap: 1rem !important;
+        }
+
+        /* Optimize prose content for mobile */
+        .prose {
+          font-size: 0.85rem !important;
+        }
+
+        .prose code {
+          word-break: break-all;
+          overflow-wrap: break-word;
+        }
+
+        /* Prevent horizontal scroll on all containers */
+        article {
+          overflow-x: hidden;
+        }
+
+        /* Better status badges */
+        #results-count {
+          font-size: 0.7rem !important;
+          padding: 0.375rem 0.75rem !important;
+        }
+
+        #index-state {
+          font-size: 0.65rem !important;
+          padding: 0.375rem 0.5rem !important;
+        }
+
+        #clear-filters {
+          padding: 0.5rem 0.75rem !important;
+          font-size: 0.75rem !important;
         }
 
         /* Reduce border radius on mobile for cleaner look */
