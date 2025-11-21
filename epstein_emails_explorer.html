@@ -1812,9 +1812,16 @@
             btn.className =
               "px-3 py-1.5 rounded-lg border border-slate-700 text-[0.7rem] hover:bg-slate-800 hover:border-emerald-500/50 transition-all duration-200 font-medium card-hover fade-in";
             btn.style.animationDelay = `${index * 40}ms`;
-            btn.innerHTML = `
-              <span class="text-emerald-400">👤</span> ${label}
-            `;
+
+            const icon = document.createElement("span");
+            icon.className = "text-emerald-400";
+            icon.textContent = "👤";
+            btn.appendChild(icon);
+
+            const labelSpan = document.createElement("span");
+            labelSpan.textContent = ` ${label}`;
+            btn.appendChild(labelSpan);
+
             btn.title = person?.display_name ? addr : "";
             btn.addEventListener("click", () => {
               state.selectedPerson = addr;
