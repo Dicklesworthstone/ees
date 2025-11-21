@@ -318,18 +318,39 @@
           state.searchWorker = worker;
 
           worker.onmessage = (event) => {
-            const { type, requestId, ids, error } = event.data || {};
+            const { type, requestId, ids, error, text, data } = event.data || {};
             if (!requestId) return;
             const entry = state.pendingWorkerRequests.get(requestId);
             if (!entry) return;
             state.pendingWorkerRequests.delete(requestId);
-            if (type === "error") entry.reject(new Error(error || "Worker error"));
-            else if (type === "init-ok") entry.resolve(true);
-            else if (type === "search-basic-result") entry.resolve(ids || []);
-            else entry.resolve(event.data);
+            if (type === "error") {
+              entry.reject(new Error(error || "Worker error"));
+              return;
+            }
+            if (type === "init-complete") {
+              entry.resolve(data || {});
+              return;
+            }
+            if (type === "search-basic-result") {
+              entry.resolve(ids || []);
+              return;
+            }
+            if (type === "text") {
+              entry.resolve(typeof text === "string" ? text : "");
+              return;
+            }
+            entry.resolve(event.data);
           };
 
           state.workerInitPromise = sendWorkerRequest("init", {});
+        }
+
+        function ensureWorkerReady() {
+          setupWorker();
+          if (!state.workerInitPromise) {
+            state.workerInitPromise = sendWorkerRequest("init", {});
+          }
+          return state.workerInitPromise;
         }
 
         function sendWorkerRequest(type, payload) {
@@ -343,15 +364,28 @@
         }
 
         async function searchLeaf(field, text) {
-          const f = field || "all";
+          const f = (field || "all").toLowerCase();
           const key = `${f}|${(text || "").toLowerCase()}`;
           if (state.termCache.has(key)) return state.termCache.get(key);
 
-          setupWorker();
-          await state.workerInitPromise;
+          await ensureWorkerReady();
+
+          let mappedField = null;
+          if (f === "subject" || f === "from" || f === "to" || f === "domains") {
+            mappedField = f;
+          } else if (
+            f === "body" ||
+            f === "text" ||
+            f === "content" ||
+            f === "search_text"
+          ) {
+            mappedField = "text";
+          } else if (f === "all") {
+            mappedField = null;
+          }
 
           const ids = await sendWorkerRequest("search-basic", {
-            field: f,
+            field: mappedField,
             query: text,
             limit: 500,
           });
@@ -970,11 +1004,9 @@
         function loadDocText(id) {
           const key = String(id);
           if (state.docTextCache.has(key)) return state.docTextCache.get(key);
-          const p = fetch(`docs/${encodeURIComponent(key)}.txt`)
-            .then((res) => {
-              if (!res.ok) throw new Error(`HTTP ${res.status}`);
-              return res.text();
-            })
+          const p = ensureWorkerReady()
+            .then(() => sendWorkerRequest("get-text", { id: Number(id) }))
+            .then((text) => (typeof text === "string" ? text : ""))
             .catch((err) => {
               console.error("Failed to load doc text", err);
               return "";
@@ -1401,21 +1433,9 @@
 
         async function loadAllData() {
           try {
-            const [metaRes, timelineRes, peopleRes, neighborsRes] =
-              await Promise.all([
-                fetch("data/meta.json"),
-                fetch("data/timeline.json"),
-                fetch("data/people.json"),
-                fetch("data/neighbors.json"),
-              ]);
-            const [meta, timeline, people, neighbors] = await Promise.all([
-              metaRes.json(),
-              timelineRes.ok ? timelineRes.json() : { buckets: [] },
-              peopleRes.ok ? peopleRes.json() : [],
-              neighborsRes.ok ? neighborsRes.json() : {},
-            ]);
+            const data = await ensureWorkerReady();
 
-            state.docs = meta || [];
+            state.docs = (data && data.docs) || [];
             state.docsById = new Map(
               state.docs.map((d) => [String(d.id), d])
             );
@@ -1428,19 +1448,13 @@
             state.allKinds = Array.from(kindSet).sort();
             state.activeKinds = new Set(state.allKinds);
 
-            state.timeline = (timeline && timeline.buckets) || [];
-            state.people = people || [];
+            state.timeline = (data && data.timeline) || [];
+            state.people = (data && data.people) || [];
             state.peopleByAddress = new Map(
               state.people.map((p) => [p.address, p])
             );
 
-            const neighborsMap = new Map();
-            if (neighbors && typeof neighbors === "object") {
-              Object.keys(neighbors).forEach((k) => {
-                neighborsMap.set(String(k), neighbors[k] || []);
-              });
-            }
-            state.neighborsById = neighborsMap;
+            state.neighborsById = new Map();
 
             buildThreadsIndex();
             renderKindsFilter();
@@ -1475,4 +1489,3 @@
     </script>
   </body>
 </html>
-

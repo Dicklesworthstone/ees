@@ -9,6 +9,8 @@ const { Document } = FlexSearch;
 
 const DATA_DIR = path.join(__dirname, "data");
 
+const MANIFEST_NAME = "index-export-manifest.json";
+
 function main() {
   const metaPath = path.join(DATA_DIR, "meta.json");
   if (!fs.existsSync(metaPath)) {
@@ -61,21 +63,24 @@ function main() {
     index.add(doc);
   }
 
-  const exportedIndex = index.export({ index: true, doc: false });
-  const exportedDocs = index.export({ index: false, doc: true });
+  const entries = [];
+  index.export((key, data) => {
+    entries.push([key, data]);
+  }, { index: true, doc: false });
 
-  const out = {
-    index: exportedIndex,
-    docs: exportedDocs,
-  };
+  const manifest = [];
+  for (const [key, data] of entries) {
+    const file = `index-export-${key}.json`;
+    const payload = { key, data };
+    fs.writeFileSync(path.join(DATA_DIR, file), JSON.stringify(payload));
+    manifest.push(file);
+  }
 
-  const outPath = path.join(DATA_DIR, "index-export.json");
-  fs.writeFileSync(outPath, JSON.stringify(out));
+  fs.writeFileSync(path.join(DATA_DIR, MANIFEST_NAME), JSON.stringify({ files: manifest }));
 
-  console.log(`Wrote precomputed index to ${outPath}`);
+  console.log(`Wrote ${entries.length} index chunk files and manifest to data/`);
 }
 
 if (require.main === module) {
   main();
 }
-

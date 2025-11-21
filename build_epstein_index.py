@@ -2,6 +2,8 @@
 import json
 import pathlib
 import re
+import sqlite3
+import zlib
 from collections import Counter
 
 from datasets import load_dataset
@@ -12,7 +14,7 @@ from dateutil import parser as dateparser
 
 
 DATA_DIR = pathlib.Path("data")
-DOCS_DIR = pathlib.Path("docs")
+DB_PATH = DATA_DIR / "epstein.sqlite"
 
 MAX_CHARS_PER_CHUNK = 8000
 MAX_LINES_PER_CHUNK = 250
@@ -112,7 +114,8 @@ def chunk_text(text):
 
 def build():
     DATA_DIR.mkdir(exist_ok=True)
-    DOCS_DIR.mkdir(exist_ok=True)
+    if DB_PATH.exists():
+        DB_PATH.unlink()
 
     print("Loading Epstein dataset...")
     ds = load_dataset("tensonaut/EPSTEIN_FILES_20K", split="train")
@@ -271,15 +274,77 @@ def build():
                     info["end_date"] = dk
             msg["thread_id"] = tid
 
-    # Build chunk docs + meta
-    meta_records = []
+    # Build SQLite bundle
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("PRAGMA journal_mode=OFF")
+    conn.execute("PRAGMA synchronous=OFF")
+    conn.execute("PRAGMA temp_store=MEMORY")
+
+    conn.execute(
+        """
+        CREATE TABLE docs (
+            id INTEGER PRIMARY KEY,
+            message_id TEXT,
+            chunk_index INTEGER,
+            chunk_count INTEGER,
+            filename TEXT,
+            kind TEXT,
+            subject TEXT,
+            `from` TEXT,
+            `to` TEXT,
+            cc TEXT,
+            bcc TEXT,
+            participants TEXT,
+            domains TEXT,
+            date TEXT,
+            date_key TEXT,
+            thread_id TEXT,
+            preview TEXT,
+            text_compressed BLOB,
+            text_bytes INTEGER
+        )
+        """
+    )
+
+    conn.execute(
+        "CREATE TABLE timeline (date TEXT PRIMARY KEY, count INTEGER NOT NULL)"
+    )
+    conn.execute(
+        """
+        CREATE TABLE people (
+            address TEXT PRIMARY KEY,
+            display_name TEXT,
+            domain TEXT,
+            message_count INTEGER,
+            sent_count INTEGER,
+            received_count INTEGER,
+            first_date TEXT,
+            last_date TEXT,
+            top_co TEXT
+        )
+        """
+    )
+    conn.execute(
+        """
+        CREATE TABLE threads (
+            thread_id TEXT PRIMARY KEY,
+            normalized_subject TEXT,
+            participants TEXT,
+            message_ids TEXT,
+            kinds TEXT,
+            start_date TEXT,
+            end_date TEXT
+        )
+        """
+    )
+
+    doc_rows = []
     doc_id_seq = 0
     for msg in messages:
         chunks = chunk_text(msg["body_text"] or msg["raw_text"])
         chunk_count = len(chunks)
         for chunk_index, chunk_text_value in enumerate(chunks):
             doc_id_seq += 1
-            doc_id = doc_id_seq
             preview = " ".join(chunk_text_value.split())
             if len(preview) > 400:
                 preview = preview[:400]
@@ -287,56 +352,47 @@ def build():
                 if last_space > 40:
                     preview = preview[:last_space]
                 preview += "…"
-            search_text = " ".join(
-                filter(
-                    None,
-                    [
-                        msg["subject"] or "",
-                        " ".join(msg["from_addrs"] or []),
-                        " ".join(msg["to_addrs"] or []),
-                        chunk_text_value,
-                    ],
+
+            compressed = zlib.compress(chunk_text_value.encode("utf-8", "ignore"), level=9)
+
+            doc_rows.append(
+                (
+                    doc_id_seq,
+                    msg["message_id"],
+                    chunk_index,
+                    chunk_count,
+                    msg["filename"],
+                    msg["kind"],
+                    msg["subject"],
+                    msg["from_raw"],
+                    msg["to_raw"],
+                    msg["cc_raw"],
+                    msg["bcc_raw"],
+                    json.dumps(msg["participants"]),
+                    json.dumps(msg["domains"]),
+                    msg["date"],
+                    msg["date_key"],
+                    msg.get("thread_id"),
+                    preview,
+                    sqlite3.Binary(compressed),
+                    len(chunk_text_value.encode("utf-8", "ignore")),
                 )
             )
-            if len(search_text) > 5000:
-                search_text = search_text[:5000]
 
-            doc_path = DOCS_DIR / f"{doc_id}.txt"
-            doc_path.write_text(chunk_text_value, encoding="utf-8", errors="ignore")
-
-            meta = {
-                "id": doc_id,
-                "message_id": msg["message_id"],
-                "chunk_index": chunk_index,
-                "chunk_count": chunk_count,
-                "filename": msg["filename"],
-                "kind": msg["kind"],
-                "subject": msg["subject"],
-                "from": msg["from_raw"],
-                "to": msg["to_raw"],
-                "cc": msg["cc_raw"],
-                "bcc": msg["bcc_raw"],
-                "participants": msg["participants"],
-                "domains": msg["domains"],
-                "date": msg["date"],
-                "date_key": msg["date_key"],
-                "thread_id": msg.get("thread_id"),
-                "search_text": search_text,
-                "preview": preview,
-            }
-            meta_records.append(meta)
-
-    DATA_DIR.joinpath("meta.json").write_text(
-        json.dumps(meta_records, ensure_ascii=False), encoding="utf-8"
+    conn.executemany(
+        """
+        INSERT INTO docs (
+            id, message_id, chunk_index, chunk_count, filename, kind,
+            subject, `from`, `to`, cc, bcc, participants, domains,
+            date, date_key, thread_id, preview, text_compressed, text_bytes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        doc_rows,
     )
 
     if timeline_counts:
-        buckets = [{"date": d, "count": timeline_counts[d]} for d in sorted(timeline_counts.keys())]
-    else:
-        buckets = []
-    DATA_DIR.joinpath("timeline.json").write_text(
-        json.dumps({"buckets": buckets}, ensure_ascii=False), encoding="utf-8"
-    )
+        timeline_rows = [(d, timeline_counts[d]) for d in sorted(timeline_counts.keys())]
+        conn.executemany("INSERT INTO timeline (date, count) VALUES (?, ?)", timeline_rows)
 
     people_records = []
     for addr, stats in people.items():
@@ -348,86 +404,58 @@ def build():
             for other, count in stats["co_counts"].most_common(25)
         ]
         people_records.append(
-            {
-                "address": addr,
-                "display_name": display_name,
-                "domain": stats["domain"],
-                "message_count": int(stats["message_count"]),
-                "sent_count": int(stats["sent_count"]),
-                "received_count": int(stats["received_count"]),
-                "first_date": stats["first_date"],
-                "last_date": stats["last_date"],
-                "top_co": top_co,
-            }
+            (
+                addr,
+                display_name,
+                stats["domain"],
+                int(stats["message_count"]),
+                int(stats["sent_count"]),
+                int(stats["received_count"]),
+                stats["first_date"],
+                stats["last_date"],
+                json.dumps(top_co),
+            )
         )
-    people_records.sort(key=lambda p: (-p["message_count"], p["address"]))
-    DATA_DIR.joinpath("people.json").write_text(
-        json.dumps(people_records, ensure_ascii=False), encoding="utf-8"
+    people_records.sort(key=lambda p: (-p[3], p[0]))
+    conn.executemany(
+        """
+        INSERT INTO people (
+            address, display_name, domain, message_count, sent_count,
+            received_count, first_date, last_date, top_co
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """,
+        people_records,
     )
 
     thread_records = []
     for tid, info in threads_info.items():
         thread_records.append(
-            {
-                "thread_id": tid,
-                "normalized_subject": info["normalized_subject"],
-                "participants": info["participants"],
-                "message_ids": info["message_ids"],
-                "kinds": sorted(info["kinds"]),
-                "start_date": info["start_date"],
-                "end_date": info["end_date"],
-            }
+            (
+                tid,
+                info["normalized_subject"],
+                json.dumps(info["participants"]),
+                json.dumps(info["message_ids"]),
+                json.dumps(sorted(info["kinds"])),
+                info["start_date"],
+                info["end_date"],
+            )
         )
-    thread_records.sort(key=lambda t: (t["start_date"] or "9999-12-31", t["thread_id"]))
-    DATA_DIR.joinpath("threads.json").write_text(
-        json.dumps(thread_records, ensure_ascii=False), encoding="utf-8"
+    thread_records.sort(key=lambda t: (t[5] or "9999-12-31", t[0]))
+    conn.executemany(
+        """
+        INSERT INTO threads (
+            thread_id, normalized_subject, participants, message_ids, kinds,
+            start_date, end_date
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        """,
+        thread_records,
     )
 
-    neighbors_path = DATA_DIR.joinpath("neighbors.json")
-    try:
-        from sentence_transformers import SentenceTransformer
-        from sklearn.neighbors import NearestNeighbors
-        import numpy as np  # noqa: F401
+    conn.commit()
+    conn.close()
 
-        texts = []
-        ids = []
-        for meta in meta_records:
-            ids.append(meta["id"])
-            base = meta.get("subject") or ""
-            snip = meta.get("preview") or ""
-            combined = (base + " " + snip).strip()
-            if not combined:
-                combined = snip or base or ""
-            texts.append(combined[:1000])
-        if not texts:
-            neighbors = {}
-        else:
-            model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
-            emb = model.encode(texts, batch_size=64, show_progress_bar=True, convert_to_numpy=True)
-            nn = NearestNeighbors(n_neighbors=min(21, len(ids)), metric="cosine")
-            nn.fit(emb)
-            distances, indices = nn.kneighbors(emb)
-            neighbors = {}
-            for i, doc_id in enumerate(ids):
-                neigh_list = []
-                for j, idx in enumerate(indices[i]):
-                    if idx == i:
-                        continue
-                    neigh_id = ids[idx]
-                    score = 1.0 - float(distances[i][j])
-                    neigh_list.append({"id": neigh_id, "score": score})
-                neighbors[str(doc_id)] = neigh_list
-        neighbors_path.write_text(json.dumps(neighbors, ensure_ascii=False), encoding="utf-8")
-    except Exception as exc:
-        neighbors_path.write_text(json.dumps({}, ensure_ascii=False), encoding="utf-8")
-        print("Warning: failed to build semantic neighbors:", exc)
-
-    print(
-        f"Wrote {len(meta_records)} chunk docs to {DATA_DIR/'meta.json'} "
-        f"and full texts to {DOCS_DIR}"
-    )
+    print(f"Wrote {len(doc_rows)} chunks into {DB_PATH}")
 
 
 if __name__ == "__main__":
     build()
-

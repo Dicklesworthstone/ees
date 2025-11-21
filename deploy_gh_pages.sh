@@ -68,9 +68,6 @@ if [ ! -f package.json ]; then
   "private": true,
   "dependencies": {
     "flexsearch": "^0.8.2"
-  },
-  "scripts": {
-    "build:index": "node build_search_index.js"
   }
 }
 EOF
@@ -81,34 +78,29 @@ npm install
 echo "Building Epstein email metadata, timeline, people, threads, neighbors..."
 uv run --python 3.13 build_epstein_index.py
 
-if [ ! -f "data/meta.json" ]; then
-  echo "build_epstein_index.py did not produce data/meta.json" >&2
+if [ ! -f "data/epstein.sqlite" ]; then
+  echo "build_epstein_index.py did not produce data/epstein.sqlite" >&2
   exit 1
 fi
 
-echo "Building precomputed FlexSearch index..."
-npm run build:index
-
-if [ ! -f "data/index-export.json" ]; then
-  echo "build_search_index.js did not produce data/index-export.json" >&2
-  exit 1
-fi
+echo "Skipping prebuilt index (worker builds at runtime)."
 
 BUILD_DIR=".gh-pages-build"
 echo "Preparing build directory: $BUILD_DIR"
 rm -rf "$BUILD_DIR"
-mkdir -p "$BUILD_DIR"
+mkdir -p "$BUILD_DIR/data"
+mkdir -p "$BUILD_DIR/vendor"
 
 cp epstein_emails_explorer.html "$BUILD_DIR/index.html"
-cp -r data "$BUILD_DIR/data"
-cp -r docs "$BUILD_DIR/docs"
+cp data/epstein.sqlite "$BUILD_DIR/data/epstein.sqlite"
 cp search-worker.js "$BUILD_DIR/search-worker.js"
+cp vendor/* "$BUILD_DIR/vendor/"
 touch "$BUILD_DIR/.nojekyll"
 
 cd "$BUILD_DIR"
 
 git init >/dev/null 2>&1
-git add index.html .nojekyll data docs search-worker.js
+git add index.html .nojekyll data search-worker.js vendor
 git commit -m "Deploy Epstein Emails Explorer" >/dev/null 2>&1
 git branch -M gh-pages
 
