@@ -6,7 +6,6 @@ import sqlite3
 from collections import Counter
 import random
 import zlib
-import logging as py_logging
 
 from datasets import load_dataset, logging as ds_logging
 from huggingface_hub import logging as hf_logging
