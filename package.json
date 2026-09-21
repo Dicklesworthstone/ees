@@ -9,4 +9,3 @@
     "build:index": "node build_search_index.js"
   }
 }
-

@@ -33,12 +33,12 @@ const INDEX_LITE_CONFIG = {
       { field: "from", tokenize: "forward" },
       { field: "to", tokenize: "forward" },
       { field: "preview", tokenize: "forward" },
-      { field: "domains", tokenize: "forward" }
+      { field: "domains", tokenize: "forward" },
     ],
-    store: ["id", "filename", "kind", "from", "to", "subject", "date", "preview"]
+    store: ["id", "filename", "kind", "from", "to", "subject", "date", "preview"],
   },
   tokenize: "forward",
-  context: false
+  context: false,
 };
 
 const INDEX_FULL_CONFIG = {
@@ -49,12 +49,12 @@ const INDEX_FULL_CONFIG = {
       { field: "from", tokenize: "forward" },
       { field: "to", tokenize: "forward" },
       { field: "text", tokenize: "forward" },
-      { field: "domains", tokenize: "forward" }
+      { field: "domains", tokenize: "forward" },
     ],
-    store: ["id", "filename", "kind", "from", "to", "subject", "date", "preview"]
+    store: ["id", "filename", "kind", "from", "to", "subject", "date", "preview"],
   },
   tokenize: "forward",
-  context: true
+  context: true,
 };
 
 async function loadDeps() {
@@ -67,7 +67,10 @@ async function loadDeps() {
   try {
     importScripts(FLEXSEARCH_URL);
     // Capture FlexSearch
-    if (self.module.exports && (self.module.exports.Document || self.module.exports.Index || self.module.exports.Worker)) {
+    if (
+      self.module.exports &&
+      (self.module.exports.Document || self.module.exports.Index || self.module.exports.Worker)
+    ) {
       self.FlexSearch = self.module.exports;
     }
   } catch (err) {
@@ -131,24 +134,26 @@ async function loadDatabase() {
     const metaResp = await fetch(META_DB_PATH);
     if (!metaResp.ok) throw new Error(`Failed to fetch ${META_DB_PATH}: ${metaResp.status}`);
     const metaBuf = await metaResp.arrayBuffer();
-    
+
     // Start text.pack fetch in the background
     textPackPromise = fetch(TEXT_PACK_PATH)
-      .then(resp => {
+      .then((resp) => {
         if (!resp.ok) throw new Error(`Failed to fetch ${TEXT_PACK_PATH}: ${resp.status}`);
         return resp.arrayBuffer();
       })
-      .then(buf => {
+      .then((buf) => {
         textPack = buf;
         // Once text pack is ready, we can start the full index build
         if (dbInstance && docsMeta.length > 0) {
-            fullIndexPromise = buildFullIndex(dbInstance, new TextDecoder(), docsMeta).catch((err) => {
+          fullIndexPromise = buildFullIndex(dbInstance, new TextDecoder(), docsMeta).catch(
+            (err) => {
               self.postMessage({ type: "full-index-error", error: String(err) });
-            });
+            },
+          );
         }
         return buf;
       })
-      .catch(err => {
+      .catch((err) => {
         console.error("Failed to load text pack:", err);
       });
 
@@ -210,7 +215,9 @@ async function loadDatabase() {
     tStmt.free();
 
     const people = [];
-    const pStmt = db.prepare("SELECT address, display_name, domain, message_count, sent_count, received_count, first_date, last_date, top_co FROM people ORDER BY message_count DESC");
+    const pStmt = db.prepare(
+      "SELECT address, display_name, domain, message_count, sent_count, received_count, first_date, last_date, top_co FROM people ORDER BY message_count DESC",
+    );
     while (pStmt.step()) {
       const r = pStmt.getAsObject();
       people.push({
@@ -228,7 +235,9 @@ async function loadDatabase() {
     pStmt.free();
 
     const threads = [];
-    const thStmt = db.prepare("SELECT thread_id, normalized_subject, participants, message_ids, kinds, start_date, end_date FROM threads ORDER BY start_date");
+    const thStmt = db.prepare(
+      "SELECT thread_id, normalized_subject, participants, message_ids, kinds, start_date, end_date FROM threads ORDER BY start_date",
+    );
     while (thStmt.step()) {
       const r = thStmt.getAsObject();
       threads.push({
@@ -245,7 +254,7 @@ async function loadDatabase() {
 
     docsMeta = meta;
 
-    // NOTE: We do NOT await fullIndexPromise here anymore. 
+    // NOTE: We do NOT await fullIndexPromise here anymore.
     // It starts when textPackPromise resolves.
 
     return { docs: meta, timeline, people, threads, index_state: "lite" };
@@ -290,12 +299,14 @@ async function getTextById(id) {
   // Wait for text pack if it's still downloading
   if (!textPack) {
     if (textPackPromise) {
-        await textPackPromise;
+      await textPackPromise;
     }
     if (!textPack) throw new Error("Text pack not available yet");
   }
 
-  const stmt = dbInstance.prepare("SELECT text_offset, text_length, compression FROM docs WHERE id = ?");
+  const stmt = dbInstance.prepare(
+    "SELECT text_offset, text_length, compression FROM docs WHERE id = ?",
+  );
   stmt.bind([id]);
   let text = "";
   if (stmt.step()) {
@@ -306,15 +317,15 @@ async function getTextById(id) {
     if (offset !== null && offset !== undefined && length !== null && length !== undefined) {
       const slice = new Uint8Array(textPack, offset, length);
       try {
-          text = new TextDecoder().decode(pako.inflate(slice));
+        text = new TextDecoder().decode(pako.inflate(slice));
       } catch (e) {
-          // Fallback for legacy 'br' if somehow present, though we rebuilt data
-          if (compression === 'br' && self.fflate && self.fflate.brotliDecompress) {
-             const inflated = self.fflate.brotliDecompress(slice);
-             text = new TextDecoder().decode(inflated);
-          } else {
-             throw e;
-          }
+        // Fallback for legacy 'br' if somehow present, though we rebuilt data
+        if (compression === "br" && self.fflate && self.fflate.brotliDecompress) {
+          const inflated = self.fflate.brotliDecompress(slice);
+          text = new TextDecoder().decode(inflated);
+        } else {
+          throw e;
+        }
       }
     }
   }
@@ -339,10 +350,10 @@ async function buildFullIndex(db, decoder, meta) {
       try {
         text = decoder.decode(pako.inflate(slice));
       } catch (e) {
-         if (compression === 'br' && self.fflate && self.fflate.brotliDecompress) {
-             const inflated = self.fflate.brotliDecompress(slice);
-             text = decoder.decode(inflated);
-         }
+        if (compression === "br" && self.fflate && self.fflate.brotliDecompress) {
+          const inflated = self.fflate.brotliDecompress(slice);
+          text = decoder.decode(inflated);
+        }
       }
     }
     const docMeta = metaById.get(row.id);

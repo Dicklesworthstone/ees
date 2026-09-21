@@ -64,9 +64,12 @@ function main() {
   }
 
   const entries = [];
-  index.export((key, data) => {
-    entries.push([key, data]);
-  }, { index: true, doc: false });
+  index.export(
+    (key, data) => {
+      entries.push([key, data]);
+    },
+    { index: true, doc: false },
+  );
 
   const manifest = [];
   for (const [key, data] of entries) {
