@@ -3022,7 +3022,14 @@
                 )
               : false;
             if (!stillVisible) {
-              selectDoc(state.currentResults[0].id);
+              if (window.innerWidth < 768) {
+                // Keep the search and result list visible while typing on mobile.
+                state.selectedDocId = null;
+                renderResultsList();
+                updateMobileLayout();
+              } else {
+                selectDoc(state.currentResults[0].id);
+              }
             } else {
               renderSelectedDoc();
             }
