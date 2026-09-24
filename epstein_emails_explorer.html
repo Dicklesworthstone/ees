@@ -1271,7 +1271,7 @@
             </button>
             <span class="font-semibold text-slate-200 text-sm tracking-tight">Message Detail</span>
           </div>
-          
+
           <div id="detail-content" class="glass flex-1 overflow-y-auto px-4 py-5 md:px-6 md:py-6 rounded-none md:rounded-2xl border-x-0 md:border border-slate-800/80 shadow-2xl">
             <div class="mx-auto max-w-3xl">
               <div class="flex items-start justify-between gap-4 mb-4">
@@ -1425,7 +1425,7 @@
           const body = elements.filtersBody;
           const chevron = elements.filtersChevron;
           if (!body || !chevron) return;
-          
+
           const isExpanded = !body.classList.contains("h-0") && !body.classList.contains("hidden");
           const newState = forceState !== undefined ? forceState : !isExpanded;
 
@@ -2663,7 +2663,7 @@
           renderSelectedDoc();
           persistStateToUrl();
           updateMobileLayout();
-          
+
           // Scroll detail container to top
           if (elements.detailContent) {
               elements.detailContent.scrollTop = 0;

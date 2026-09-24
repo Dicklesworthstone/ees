@@ -3,5 +3,7 @@ node_modules/
 .gh-pages-build/
 __pycache__/
 *.pyc
-data/
+/data/*
+!/data/meta.sqlite
+!/data/text.pack
 docs/

@@ -11,18 +11,18 @@ if ! command -v uv >/dev/null 2>&1; then
   exit 1
 fi
 
-if ! command -v node >/dev/null 2>&1; then
-  echo "node is required on PATH" >&2
-  exit 1
-fi
-
-if ! command -v npm >/dev/null 2>&1; then
-  echo "npm is required on PATH" >&2
-  exit 1
-fi
-
 if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Run this script from inside a git repository" >&2
+  exit 1
+fi
+
+if [ "$(git branch --show-current)" != "main" ]; then
+  echo "Deploy from main so GitHub Pages has no separate publishing branch" >&2
+  exit 1
+fi
+
+if ! git diff --cached --quiet; then
+  echo "Commit or unstage existing staged changes before deploying" >&2
   exit 1
 fi
 
@@ -43,81 +43,40 @@ if [ ! -f "build_epstein_index.py" ]; then
   exit 1
 fi
 
-if [ ! -f "build_search_index.js" ]; then
-  echo "build_search_index.js not found in current directory" >&2
-  exit 1
-fi
-
 if [ ! -f "pyproject.toml" ]; then
   echo "pyproject.toml not found; cannot install Python deps" >&2
   exit 1
 fi
 
-echo "Cleaning up previous virtual environment..."
-rm -rf .venv
-
-echo "Creating Python 3.13 virtual env with uv..."
-uv venv --python 3.13 .venv
-
 echo "Syncing Python dependencies via uv (pyproject.toml)..."
-uv sync --python 3.13
-
-echo "Ensuring npm dependencies are installed..."
-if [ ! -f package.json ]; then
-  cat > package.json << 'EOF'
-{
-  "name": "epstein-emails-explorer",
-  "version": "1.0.0",
-  "private": true,
-  "dependencies": {
-    "flexsearch": "^0.8.2"
-  }
-}
-EOF
-fi
-
-npm install
+uv sync --frozen --python 3.13
 
 echo "Building Epstein email metadata, timeline, people, threads, neighbors..."
-uv run --python 3.13 build_epstein_index.py
+uv run --frozen --python 3.13 build_epstein_index.py
 
 if [ ! -f "data/meta.sqlite" ] || [ ! -f "data/text.pack" ]; then
   echo "build_epstein_index.py did not produce data/meta.sqlite and data/text.pack" >&2
   exit 1
 fi
 
-echo "Skipping prebuilt index (worker builds at runtime)."
+echo "Preparing the main-branch Pages files..."
+cp epstein_emails_explorer.html index.html
+touch .nojekyll
+git add -- .gitignore epstein_emails_explorer.html index.html search-worker.js vendor deploy_gh_pages.sh README.md .nojekyll
+git add -f -- data/meta.sqlite data/text.pack
 
-BUILD_DIR=".gh-pages-build"
-echo "Preparing build directory: $BUILD_DIR"
-rm -rf "$BUILD_DIR"
-mkdir -p "$BUILD_DIR/data"
-mkdir -p "$BUILD_DIR/vendor"
-
-cp epstein_emails_explorer.html "$BUILD_DIR/index.html"
-cp data/meta.sqlite "$BUILD_DIR/data/meta.sqlite"
-cp data/text.pack "$BUILD_DIR/data/text.pack"
-cp search-worker.js "$BUILD_DIR/search-worker.js"
-cp vendor/* "$BUILD_DIR/vendor/"
-touch "$BUILD_DIR/.nojekyll"
-
-cd "$BUILD_DIR"
-
-git init >/dev/null 2>&1
-git add index.html .nojekyll data search-worker.js vendor
-git commit -m "Deploy Epstein Emails Explorer" >/dev/null 2>&1
-git branch -M gh-pages
-
-if git remote get-url origin >/dev/null 2>&1; then
-  git remote set-url origin "$REPO_URL"
-else
-  git remote add origin "$REPO_URL"
+if ! git diff --cached --quiet; then
+  git commit \
+    -m "deploy(pages): publish current explorer and data on main" \
+    -m "Rebuild the public metadata database and text pack from the pinned corpus, then copy the current explorer UI to the Pages entry point. Keep the worker and vendored browser dependencies on the same mainline revision as the data they read. The static site is served directly from main; no separate publishing branch or forced history update is needed."
 fi
 
-echo "Pushing to gh-pages branch on $REPO_URL ..."
-git push --force origin gh-pages
+git fetch origin refs/heads/main:refs/remotes/origin/main refs/heads/master:refs/remotes/origin/master
+if ! git merge-base --is-ancestor origin/main HEAD; then
+  echo "Remote main advanced or diverged; harmonize it before deploying" >&2
+  exit 1
+fi
+git push --atomic origin main:main main:master
 
-echo
-echo "Deployment complete."
-echo "In the GitHub repo settings, set Pages source to:"
-echo "  Branch: gh-pages   Folder: / (root)"
+echo "Deployment pushed to main and master at $REPO_URL."
+echo "GitHub Pages source: main / (root)."

@@ -143,7 +143,7 @@ flowchart LR
 flowchart TD
     A[Edit Code] --> B[build_epstein_index.py]
     B --> C[meta.sqlite + text.pack]
-    C --> D[deploy_gh_pages.sh]
+    C --> D[main branch site files]
     D --> E[GitHub Pages]
     E --> F[Production Site]
     
@@ -161,7 +161,7 @@ flowchart TD
 # Rebuild the meta + text pack bundle
 uv run build_epstein_index.py
 
-# Deploy to GitHub Pages (ships index.html, worker, vendor, meta.sqlite, text.pack)
+# Rebuild and deploy the main-branch Pages site
 ./deploy_gh_pages.sh
 ```
 
@@ -173,9 +173,10 @@ ees/
 │   ├── meta.sqlite          # Hot meta: docs, people, threads, timeline
 │   └── text.pack            # zlib-compressed bodies (offset-addressable)
 ├── epstein_emails_explorer.html  # Main UI
+├── index.html                    # Pages entry point, copied from the main UI
 ├── search-worker.js              # Web Worker for search/indexing
 ├── build_epstein_index.py        # Builds meta.sqlite + text.pack
-├── deploy_gh_pages.sh            # Deploys static site to gh-pages
+├── deploy_gh_pages.sh            # Rebuilds data and pushes main/master for Pages
 └── vendor/                       # Vendored js/wasm (sql.js, pako, fflate, flexsearch)
 ```
 
